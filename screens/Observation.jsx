@@ -16,7 +16,7 @@ import { Asset } from 'expo-asset';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as XLSX from 'xlsx';
 
-const LOCAL_IP = "192.168.1.10";
+const LOCAL_IP = "192.168.1.12";
 const API_URL = `http://${LOCAL_IP}:4000`;
 
 // Helper Components Defined OUTSIDE
@@ -383,7 +383,7 @@ export default function Observation({ onLogout }) {
 
         // Reset Form
         setForm(prev => ({
-            ...prev,
+            ...prev, // Keep latitude, longitude, areaName
             commonName: '',
             scientificName: '',
             category: 'Plant', // Default
@@ -501,18 +501,10 @@ export default function Observation({ onLogout }) {
 
             <ScrollView contentContainerStyle={styles.content}>
 
-                {/* Top Controls Row: History | Location | Tracking */}
+                {/* Top Controls Row: Location | Tracking */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 }}>
 
-                    {/* 1. History Button */}
-                    <TouchableOpacity
-                        onPress={() => navigation.navigate('Results')}
-                        style={{ padding: 8, backgroundColor: theme.surface, borderRadius: 20, elevation: 2 }}
-                    >
-                        <MaterialCommunityIcons name="clipboard-text-clock-outline" size={22} color={theme.textSecondary} />
-                    </TouchableOpacity>
-
-                    {/* 2. Location Pill (Compact) */}
+                    {/* 1. Location Pill (Compact) */}
                     <TouchableOpacity
                         onPress={() => {
                             if (!fetchingLocation) {
@@ -524,7 +516,7 @@ export default function Observation({ onLogout }) {
                         style={{
                             flexDirection: 'row', alignItems: 'center',
                             backgroundColor: theme.surface, paddingHorizontal: 10, paddingVertical: 6,
-                            borderRadius: 20, maxWidth: '45%', elevation: 2
+                            borderRadius: 20, maxWidth: '60%', elevation: 2
                         }}
                     >
                         <MaterialCommunityIcons name="crosshairs-gps" size={16} color={theme.primary} style={{ marginRight: 4 }} />
@@ -533,7 +525,7 @@ export default function Observation({ onLogout }) {
                         </Text>
                     </TouchableOpacity>
 
-                    {/* 3. Tracking Pill (Compact) */}
+                    {/* 2. Tracking Pill (Compact) */}
                     <TouchableOpacity
                         onPress={isTracking ? stopTracking : startTracking}
                         style={{
@@ -570,16 +562,9 @@ export default function Observation({ onLogout }) {
                         theme={theme}
                     />
 
-                    <InputField
-                        label="Scientific Name"
-                        value={form.scientificName}
-                        onChangeText={(t) => updateForm('scientificName', t)}
-                        placeholder="e.g. Rosa"
-                        theme={theme}
-                    />
-
+                    {/* Scientific Name 1 - ALWAYS VISIBLE (Dropdown) */}
                     <View style={styles.inputGroup}>
-                        <Text style={[styles.label, { color: theme.textSecondary }]}>Scientific Name</Text>
+                        <Text style={[styles.label, { color: theme.textSecondary }]}>Scientific Name (Searchable)</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <TextInput
                                 style={[
@@ -593,7 +578,7 @@ export default function Observation({ onLogout }) {
                                 ]}
                                 value={form.scientificName}
                                 onChangeText={(t) => updateForm('scientificName', t)}
-                                placeholder="e.g. Rosa"
+                                placeholder="Search or Enter Name"
                                 placeholderTextColor={theme.textLight}
                             />
                             {availableScientificNames.length > 0 && (
@@ -613,6 +598,16 @@ export default function Observation({ onLogout }) {
                         theme={theme}
                     />
                 </View>
+
+                {/* View Results Link - Underneath the taxonomy card */}
+                <TouchableOpacity
+                    onPress={() => navigation.navigate('Results')}
+                    style={{ alignSelf: 'center', marginTop: 15, marginBottom: 5 }}
+                >
+                    <Text style={{ color: theme.primary, fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' }}>
+                        View all submitted observations
+                    </Text>
+                </TouchableOpacity>
 
                 {fetchingLocation && (
                     <View style={{ marginTop: 10, alignItems: 'center' }}>
@@ -873,6 +868,18 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         marginBottom: 16,
         textAlign: 'center',
+    },
+    smallBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 5,
+    },
+    smallBtnText: {
+        fontSize: 12,
+        fontWeight: '700',
+        marginLeft: 5,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
     categoryItem: {
         paddingVertical: 16,

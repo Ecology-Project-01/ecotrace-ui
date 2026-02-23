@@ -12,8 +12,11 @@ import Observation from '../screens/Observation';
 import Results from '../screens/Results';
 import CategoryDetails from '../screens/CategoryDetails';
 import EditProfile from '../screens/EditProfile';
+import AdminRights from '../screens/AdminRights';
+import SuperAdminRights from '../screens/SuperAdminRights';
 import colors from '../colors/colors';
 import { setUser as setUserAction, clearUser } from '../store/slices/userSlice';
+
 
 const Stack = createNativeStackNavigator();
 
@@ -109,6 +112,13 @@ export default function RootNavigator() {
                         <Stack.Screen name='EditProfile'>
                             {(props) => <EditProfile {...props} />}
                         </Stack.Screen>
+                        <Stack.Screen name='AdminRights'>
+                            {(props) => <AdminRights {...props} />}
+                        </Stack.Screen>
+                        <Stack.Screen name='SuperAdminRights'>
+                            {(props) => <SuperAdminRights {...props} />}
+                        </Stack.Screen>
+
                     </Stack.Group>
                 )}
             </Stack.Navigator>

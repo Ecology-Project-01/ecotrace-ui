@@ -17,10 +17,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
+import * as Device from 'expo-device';
+import { Ionicons } from '@expo/vector-icons';
+
+
 import colors from "../colors/colors";
 import CustomAlert from "../components/CustomAlert";
 
-const LOCAL_IP = "192.168.1.10";
+const LOCAL_IP = "192.168.1.12";
 
 const API_URL = `http://${LOCAL_IP}:4000`;
 
@@ -32,9 +36,12 @@ export default function Auth({ onLogin }) {
   const theme = isDark ? colors.dark : colors.light;
 
   const [isLogin, setIsLogin] = useState(true);
+  const [isReset, setIsReset] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isPwdShown, setIsPwdShown] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [isBiometricSupported, setIsBiometricSupported] = useState(false);
   const [hasStoredCreds, setHasStoredCreds] = useState(false);
@@ -95,6 +102,16 @@ export default function Auth({ onLogin }) {
     setAlertConfig(prev => ({ ...prev, visible: false }));
   };
 
+  const getDeviceInfo = () => {
+    return {
+      brand: Device.brand || "Unknown",
+      model: Device.modelName || "Unknown",
+      osVersion: Device.osVersion || "Unknown",
+    };
+  };
+
+
+
   // Handle Biometric Login Flow
   const handleBiometricLogin = async () => {
     setLoading(true);
@@ -113,12 +130,18 @@ export default function Auth({ onLogin }) {
           const response = await fetch(`${API_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: creds.email, password: creds.password }),
+            body: JSON.stringify({
+              email: creds.email,
+              password: creds.password,
+              deviceInfo: getDeviceInfo()
+            }),
           });
+
 
           const data = await response.json();
           if (response.ok) {
             if (onLogin) {
+              console.log(`[Auth] Biometric Login Success for: ${creds.email}`);
               onLogin({
                 email: creds.email,
                 name: data.user?.name || "User",
@@ -143,8 +166,15 @@ export default function Auth({ onLogin }) {
   const handleAuth = async () => {
     setLoading(true);
     try {
-      const endpoint = isLogin ? '/auth/login' : '/auth/signup';
-      const body = isLogin ? { email, password } : { email, password, name };
+      let endpoint = isLogin ? '/auth/login' : '/auth/signup';
+      let payload = isLogin ? { email, password } : { email, password, name };
+
+      if (isReset) {
+        endpoint = '/auth/reset-password';
+        payload = { email, newPassword: password };
+      }
+
+      const body = { ...payload, deviceInfo: getDeviceInfo() };
 
       const response = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
@@ -152,15 +182,29 @@ export default function Auth({ onLogin }) {
         body: JSON.stringify(body),
       });
 
+
+
       const contentType = response.headers.get("content-type");
       if (contentType && contentType.indexOf("application/json") !== -1) {
         const data = await response.json();
 
         if (!response.ok) {
+          console.warn(`[Auth] ${isReset ? 'Reset' : (isLogin ? 'Login' : 'Signup')} Failed:`, data.err || data.msg);
           throw new Error(data.err || data.msg || "Authentication failed");
         }
 
+        if (isReset) {
+          console.log(`[Auth] Password Reset Success for: ${email}`);
+          showAlert("Success", "Password updated successfully. Please login.", [
+            { text: "OK", onPress: () => { setIsReset(false); setIsLogin(true); } }
+          ]);
+          setLoading(false);
+          return;
+        }
+
+
         const finishLogin = () => {
+          console.log(`[Auth] ${isLogin ? 'Login' : 'Signup'} Success for: ${email}`);
           if (onLogin) {
             onLogin({
               email,
@@ -240,9 +284,12 @@ export default function Auth({ onLogin }) {
             </View>
 
             <View style={[styles.card, { backgroundColor: theme.surface, shadowColor: isDark ? "#000" : "#ccc" }]}>
-              <Text style={[styles.title, { color: theme.text }]}>{isLogin ? "Sign In" : "Create Account"}</Text>
+              <Text style={[styles.title, { color: theme.text }]}>
+                {isReset ? "Reset Password" : (isLogin ? "Login" : "Create Account")}
+              </Text>
 
-              {!isLogin && (
+
+              {!isLogin && !isReset && (
                 <View style={styles.inputContainer}>
                   <Text style={[styles.label, { color: theme.textSecondary }]}>Full Name</Text>
                   <TextInput
@@ -270,16 +317,34 @@ export default function Auth({ onLogin }) {
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>Password</Text>
-                <TextInput
-                  style={[styles.input, { color: theme.text, borderBottomColor: theme.border }]}
-                  placeholder="••••••••"
-                  placeholderTextColor={theme.textLight}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                />
+                <Text style={[styles.label, { color: theme.textSecondary }]}>
+                  {isReset ? "New Password" : "Password"}
+                </Text>
+                <View style={[styles.passwordInputWrapper, { borderBottomColor: theme.border }]}>
+                  <TextInput
+                    style={[styles.input, { color: theme.text, borderBottomWidth: 0, flex: 1 }]}
+                    placeholder="••••••••"
+                    placeholderTextColor={theme.textLight}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!isPwdShown}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setIsPwdShown(!isPwdShown)}
+                    style={styles.eyeIcon}
+                  >
+                    <Ionicons
+                      name={isPwdShown ? "eye-outline" : "eye-off-outline"}
+                      size={20}
+                      color={theme.textSecondary}
+                    />
+                  </TouchableOpacity>
+                </View>
+
               </View>
+
+
+
 
               <TouchableOpacity onPress={handleAuth} disabled={loading} activeOpacity={0.8}>
                 <LinearGradient
@@ -291,10 +356,23 @@ export default function Auth({ onLogin }) {
                   {loading ? (
                     <ActivityIndicator color="#FFF" />
                   ) : (
-                    <Text style={styles.buttonText}>{isLogin ? "Sign In" : "Get Started"}</Text>
+                    <Text style={styles.buttonText}>
+                      {isReset ? "Update Password" : (isLogin ? "Login" : "Get Started")}
+                    </Text>
                   )}
                 </LinearGradient>
+
               </TouchableOpacity>
+
+              {isLogin && !isReset && (
+                <TouchableOpacity
+                  onPress={() => { setIsReset(true); setIsLogin(false); }}
+                  style={{ alignSelf: 'flex-end', marginTop: 12 }}
+                >
+                  <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: '500' }}>Forgot Password?</Text>
+                </TouchableOpacity>
+              )}
+
 
               {isLogin && hasStoredCreds && isBiometricSupported && (
                 <TouchableOpacity onPress={handleBiometricLogin} style={styles.biometricButton} activeOpacity={0.7}>
@@ -302,12 +380,26 @@ export default function Auth({ onLogin }) {
                 </TouchableOpacity>
               )}
 
-              <TouchableOpacity onPress={() => setIsLogin(!isLogin)} style={styles.toggleContainer} activeOpacity={0.7}>
+              <TouchableOpacity
+                onPress={() => {
+                  if (isReset) {
+                    setIsReset(false);
+                    setIsLogin(true);
+                  } else {
+                    setIsLogin(!isLogin);
+                  }
+                }}
+                style={styles.toggleContainer}
+                activeOpacity={0.7}
+              >
                 <Text style={styles.toggleText}>
-                  {isLogin ? "New here? " : "Returning user? "}
-                  <Text style={styles.toggleBold}>{isLogin ? "Create an account" : "Sign in"}</Text>
+                  {isReset ? "Back to " : (isLogin ? "New here? " : "Returning user? ")}
+                  <Text style={styles.toggleBold}>
+                    {isReset ? "Login" : (isLogin ? "Create an account" : "Login")}
+                  </Text>
                 </Text>
               </TouchableOpacity>
+
             </View>
 
             {/* <Text style={{ textAlign: 'center', marginTop: 20, color: theme.textSecondary, fontSize: 10 }}>
@@ -442,4 +534,13 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     textAlign: 'center',
   },
+  passwordInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+  },
+  eyeIcon: {
+    padding: 8,
+  }
 });
+

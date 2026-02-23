@@ -8,7 +8,7 @@ import colors from '../colors/colors';
 import { CATEGORIES } from '../constants/categories';
 import { ICONS, getCategoryIcon } from '../constants/icons';
 
-const LOCAL_IP = "192.168.1.10";
+const LOCAL_IP = "192.168.1.12";
 const API_URL = `http://${LOCAL_IP}:4000`;
 
 export default function Results() {

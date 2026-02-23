@@ -93,6 +93,30 @@ export default function Settings({ navigation, onLogout }) {
                     </View>
                 </View>
 
+                {/* Administration Section - Conditional */}
+                {(auth_role === 'admin' || auth_role === 'superadmin') && (
+                    <View style={styles.section}>
+                        <Text style={[styles.sectionHeader, { color: colors.purple }]}>Administration</Text>
+                        <View style={styles.cardContainer}>
+                            <SettingItem
+                                title="Admin Rights"
+                                subtitle="Tools for administrators"
+                                theme={theme}
+                                onPress={() => navigation.navigate('AdminRights')}
+                            />
+                            {auth_role === 'superadmin' && (
+                                <SettingItem
+                                    title="Superadmin Rights"
+                                    subtitle="Full system control"
+                                    theme={theme}
+                                    onPress={() => navigation.navigate('SuperAdminRights')}
+                                />
+                            )}
+                        </View>
+                    </View>
+                )}
+
+
                 {/* Logout */}
                 <TouchableOpacity onPress={onLogout} activeOpacity={0.8} style={styles.logoutBtnContainer}>
                     <Text style={[styles.logoutText, { color: colors.red }]}>Log Out</Text>
