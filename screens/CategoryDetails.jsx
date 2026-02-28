@@ -16,25 +16,49 @@ export default function CategoryDetails() {
 
     const [selectedItem, setSelectedItem] = useState(null);
 
-    const renderItem = ({ item }) => (
-        <TouchableOpacity onPress={() => setSelectedItem(item)} activeOpacity={0.8}>
-            <View style={[styles.card, { backgroundColor: theme.surface }]}>
-                <View style={styles.cardHeader}>
-                    <Text style={[styles.commonName, { color: theme.text }]}>{item.taxon?.common_name}</Text>
-                    <Text style={[styles.date, { color: theme.textSecondary }]}>
-                        {new Date(item.observedAt || item.createdAt).toLocaleDateString()}
-                    </Text>
+    const renderItem = ({ item }) => {
+        const categoryColor = theme.primary; // Or map specific colors to categories
+
+        return (
+            <TouchableOpacity onPress={() => setSelectedItem(item)} activeOpacity={0.8}>
+                <View style={[
+                    styles.card,
+                    {
+                        backgroundColor: theme.surface,
+                        borderLeftWidth: 4,
+                        borderLeftColor: categoryColor
+                    }
+                ]}>
+                    <View style={styles.cardHeader}>
+                        <View style={{ flex: 1 }}>
+                            <Text style={[styles.commonName, { color: theme.text }]}>{item.taxon?.common_name}</Text>
+                            <Text style={[styles.scientificName, { color: theme.textSecondary, fontSize: 13 }]}>
+                                {item.taxon?.scientific_name || "Unknown Species"}
+                            </Text>
+                        </View>
+                        <View style={[styles.countBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}>
+                            <Text style={[styles.countText, { color: theme.primary }]}>{item.count}x</Text>
+                        </View>
+                    </View>
+
+                    <View style={styles.cardFooter}>
+                        <View style={styles.footerItem}>
+                            <MaterialCommunityIcons name="map-marker" size={14} color={theme.textLight} />
+                            <Text numberOfLines={1} style={[styles.footerText, { color: theme.textSecondary }]}>
+                                {Array.isArray(item.location_name) ? item.location_name[0] : (item.location_name || "Unknown")}
+                            </Text>
+                        </View>
+                        <View style={styles.footerItem}>
+                            <MaterialCommunityIcons name="calendar" size={14} color={theme.textLight} />
+                            <Text style={[styles.footerText, { color: theme.textSecondary }]}>
+                                {new Date(item.observedDate || item.createdAt).toLocaleDateString()}
+                            </Text>
+                        </View>
+                    </View>
                 </View>
-                <Text style={[styles.scientificName, { color: theme.primary }]}>
-                    {item.taxon?.scientific_name ? `${item.taxon.scientific_name} • ` : ''}{item.location_name || "Unknown Location"}
-                </Text>
-                <Text style={[styles.details, { color: theme.textSecondary }]}>
-                    Count: {item.count} • {item.distance ? (item.distance < 1 ? `${(item.distance * 1000).toFixed(0)} m` : `${item.distance.toFixed(2)} km`) : "0 m"}
-                </Text>
-                {item.notes ? <Text numberOfLines={2} style={[styles.notes, { color: theme.textSecondary }]}>"{item.notes}"</Text> : null}
-            </View>
-        </TouchableOpacity>
-    );
+            </TouchableOpacity>
+        );
+    };
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -99,39 +123,48 @@ export default function CategoryDetails() {
                                     </View>
 
                                     {/* Info Grid */}
-                                    <View style={styles.infoSection}>
+                                    <View style={[styles.infoSection, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', padding: 15, borderRadius: 16 }]}>
                                         <InfoRow
-                                            icon="calendar"
-                                            label="Observed"
-                                            value={new Date(selectedItem.observedAt || selectedItem.createdAt).toLocaleString()}
+                                            icon="calendar-clock"
+                                            label="Observed On"
+                                            value={new Date(selectedItem.observedDate).toLocaleString()}
                                             theme={theme}
+                                            iconColor={colors.vividPink}
+                                        />
+                                        <InfoRow
+                                            icon="calendar-plus"
+                                            label="Record Created"
+                                            value={new Date(selectedItem.createdDate || selectedItem.createdAt).toLocaleString()}
+                                            theme={theme}
+                                            iconColor={colors.electricCyan}
                                         />
                                         <InfoRow
                                             icon="account"
                                             label="Contributor"
                                             value={selectedItem.contributor}
                                             theme={theme}
+                                            iconColor={colors.neonPurple}
                                         />
                                         <InfoRow
                                             icon="map-marker"
                                             label="Location"
-                                            value={selectedItem.location_name || "Unknown Area"}
+                                            value={Array.isArray(selectedItem.location_name) ? selectedItem.location_name.join(', ') : (selectedItem.location_name || "Unknown Area")}
                                             theme={theme}
+                                            iconColor={colors.electricLime}
                                         />
                                         <InfoRow
                                             icon="crosshairs-gps"
                                             label="Coordinates"
-                                            value={`${selectedItem.location?.coordinates[1]?.toFixed(5)}, ${selectedItem.location?.coordinates[0]?.toFixed(5)}`}
+                                            value={
+                                                Array.isArray(selectedItem.location)
+                                                    ? `${selectedItem.location[0]}, ${selectedItem.location[1]}`
+                                                    : (selectedItem.location?.coordinates
+                                                        ? `${selectedItem.location.coordinates[1]?.toFixed(5)}, ${selectedItem.location.coordinates[0]?.toFixed(5)}`
+                                                        : "N/A")
+                                            }
                                             theme={theme}
+                                            iconColor={colors.warmPeach}
                                         />
-                                        {selectedItem.distance > 0 && (
-                                            <InfoRow
-                                                icon="walk"
-                                                label="Distance"
-                                                value={selectedItem.distance < 1 ? `${(selectedItem.distance * 1000).toFixed(0)} meters` : `${selectedItem.distance.toFixed(2)} km`}
-                                                theme={theme}
-                                            />
-                                        )}
                                     </View>
 
                                     {/* Notes */}
@@ -152,10 +185,12 @@ export default function CategoryDetails() {
     );
 }
 
-const InfoRow = ({ icon, label, value, theme }) => (
+const InfoRow = ({ icon, label, value, theme, iconColor }) => (
     <View style={styles.infoRow}>
-        <MaterialCommunityIcons name={icon} size={20} color={theme.textSecondary} style={{ width: 30 }} />
-        <View>
+        <View style={[styles.miniIconCircle, { backgroundColor: iconColor ? `${iconColor}20` : 'rgba(0,0,0,0.05)' }]}>
+            <MaterialCommunityIcons name={icon} size={18} color={iconColor || theme.textSecondary} />
+        </View>
+        <View style={{ flex: 1 }}>
             <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>{label}</Text>
             <Text style={[styles.infoValue, { color: theme.text }]}>{value}</Text>
         </View>
@@ -204,17 +239,43 @@ const styles = StyleSheet.create({
     cardHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 4,
+        alignItems: 'flex-start',
+        marginBottom: 12,
     },
     commonName: {
         fontSize: 18,
         fontWeight: 'bold',
+        marginBottom: 2,
     },
     scientificName: {
         fontSize: 14,
         fontStyle: 'italic',
-        marginBottom: 8,
+    },
+    countBadge: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+        marginLeft: 8,
+    },
+    countText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    cardFooter: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(0,0,0,0.05)',
+    },
+    footerItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginRight: 16,
+    },
+    footerText: {
+        fontSize: 12,
+        marginLeft: 4,
     },
     date: {
         fontSize: 12,
@@ -279,8 +340,16 @@ const styles = StyleSheet.create({
     },
     infoRow: {
         flexDirection: 'row',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         marginBottom: 16
+    },
+    miniIconCircle: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12
     },
     infoLabel: {
         fontSize: 11,

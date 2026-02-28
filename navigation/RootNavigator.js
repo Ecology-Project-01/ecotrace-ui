@@ -35,7 +35,7 @@ export default function RootNavigator() {
             const token = await SecureStore.getItemAsync('userToken');
             const userInfoStr = await SecureStore.getItemAsync('userInfo');
 
-            if (token && userInfoStr) {
+            if (token && token !== "null" && token !== "undefined" && userInfoStr) {
                 const decoded = jwtDecode(token);
                 const currentTime = Date.now() / 1000;
 

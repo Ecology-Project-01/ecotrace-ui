@@ -24,7 +24,7 @@ import { Ionicons } from '@expo/vector-icons';
 import colors from "../colors/colors";
 import CustomAlert from "../components/CustomAlert";
 
-const LOCAL_IP = "192.168.1.12";
+const LOCAL_IP = "192.168.1.8";
 
 const API_URL = `http://${LOCAL_IP}:4000`;
 

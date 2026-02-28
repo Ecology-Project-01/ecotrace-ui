@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
 
 import colors from '../colors/colors';
@@ -16,7 +17,7 @@ import { Asset } from 'expo-asset';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as XLSX from 'xlsx';
 
-const LOCAL_IP = "192.168.1.12";
+const LOCAL_IP = "192.168.1.8";
 const API_URL = `http://${LOCAL_IP}:4000`;
 
 // Helper Components Defined OUTSIDE
@@ -64,9 +65,10 @@ const CategorySelect = ({ category, onPress, theme }) => (
 
 
 export default function Observation({ onLogout }) {
-    const isDark = useSelector((state) => state.theme.isDark);
-    const { auth_email, auth_username } = useSelector((state) => state.user);
-    const theme = isDark ? colors.dark : colors.light;
+    const isDark = useSelector((state) => state?.theme?.isDark || false);
+    const userState = useSelector((state) => state?.user || {});
+    const { auth_email, auth_username } = userState;
+    const theme = isDark ? (colors.dark || {}) : (colors.light || {});
     const navigation = useNavigation();
 
     const [form, setForm] = useState({
@@ -74,11 +76,12 @@ export default function Observation({ onLogout }) {
         scientificName: '',
         category: 'Plant',
         count: '1',
-        notes: '',
         latitude: '',
         longitude: '',
         areaName: ''
     });
+
+    const [showNotes, setShowNotes] = useState(false);
 
     const [loading, setLoading] = useState(false);
     const [fetchingLocation, setFetchingLocation] = useState(true);
@@ -162,94 +165,6 @@ export default function Observation({ onLogout }) {
             setAvailableScientificNames([]);
         }
     }, [form.category, isExcelLoaded, allScientificData]);
-
-    // Tracking State
-    const [isTracking, setIsTracking] = useState(false);
-    const [route, setRoute] = useState([]);
-    const [totalDistance, setTotalDistance] = useState(0); // in km
-    const locationSubscription = React.useRef(null);
-
-    const haversineDistance = (coords1, coords2) => {
-        const toRad = (x) => (x * Math.PI) / 180;
-        const R = 6371; // Radius of the Earth in km
-        const dLat = toRad(coords2.latitude - coords1.latitude);
-        const dLon = toRad(coords2.longitude - coords1.longitude);
-        const lat1 = toRad(coords1.latitude);
-        const lat2 = toRad(coords2.latitude);
-
-        const a =
-            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c; // Distance in km
-    };
-
-    const startTracking = async () => {
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-            Alert.alert('Permission to access location was denied');
-            return;
-        }
-
-        setIsTracking(true);
-        setRoute([]);
-        setTotalDistance(0);
-
-        locationSubscription.current = await Location.watchPositionAsync(
-            {
-                accuracy: Location.Accuracy.High,
-                timeInterval: 2000,
-                distanceInterval: 5,
-            },
-            (newLocation) => {
-                const { latitude, longitude } = newLocation.coords;
-
-                setRoute((prevRoute) => {
-                    const newPoint = { latitude, longitude, timestamp: newLocation.timestamp };
-                    if (prevRoute.length > 0) {
-                        const lastPoint = prevRoute[prevRoute.length - 1];
-                        const dist = haversineDistance(lastPoint, newPoint);
-
-                        // Filter Jitter: Only record if moved > 10 meters (0.01 km)
-                        if (dist > 0.01) {
-                            setTotalDistance(prevDist => prevDist + dist);
-                            return [...prevRoute, newPoint];
-                        }
-                        return prevRoute;
-                    }
-                    return [newPoint];
-                });
-
-                // Auto-update current location in form
-                setForm(prev => ({
-                    ...prev,
-                    latitude: latitude.toString(),
-                    longitude: longitude.toString()
-                }));
-            }
-        );
-    };
-
-    const stopTracking = () => {
-        if (locationSubscription.current) {
-            locationSubscription.current.remove();
-            locationSubscription.current = null;
-        }
-        setIsTracking(false);
-        const distStr = totalDistance < 1
-            ? `${(totalDistance * 1000).toFixed(0)} m`
-            : `${totalDistance.toFixed(2)} km`;
-        Alert.alert("Tracking Stopped", `You travelled ${distStr}.`);
-    };
-
-    // Cleanup tracking on unmount
-    useEffect(() => {
-        return () => {
-            if (locationSubscription.current) {
-                locationSubscription.current.remove();
-            }
-        };
-    }, []);
 
     // Initial Location & Area Name Fetching
     useEffect(() => {
@@ -374,9 +289,7 @@ export default function Observation({ onLogout }) {
             latitude: form.latitude,
             longitude: form.longitude,
             areaName: form.areaName, // Save area name
-            observedAt: new Date(),
-            route: route, // Attach recorded route
-            distance: totalDistance // Attach total distance
+            observedAt: new Date()
         };
 
         setObservationsList(prev => [...prev, newItem]);
@@ -405,6 +318,8 @@ export default function Observation({ onLogout }) {
     const handleSubmitAll = async () => {
         if (observationsList.length === 0) return;
 
+        const token = await SecureStore.getItemAsync('userToken');
+
         setLoading(true);
         let successCount = 0;
         let failedCount = 0;
@@ -419,14 +334,9 @@ export default function Observation({ onLogout }) {
                 },
                 count: item.count,
                 notes: item.notes || "",
-                location: {
-                    type: 'Point',
-                    coordinates: [parseFloat(item.longitude), parseFloat(item.latitude)]
-                },
-                location_name: item.areaName, // Ensure this matches backend schema
+                location: [item.latitude.toString(), item.longitude.toString()],
+                location_name: item.areaName ? item.areaName.split(',').map(s => s.trim()) : [],
                 observedAt: item.observedAt,
-                route: item.route || [],
-                distance: item.distance || 0
             };
 
             try {
@@ -434,6 +344,7 @@ export default function Observation({ onLogout }) {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify(payload),
                 });
@@ -441,10 +352,12 @@ export default function Observation({ onLogout }) {
                 if (response.ok) {
                     successCount++;
                 } else {
+                    const data = await response.json();
+                    console.error("Upload Error:", data);
                     failedCount++;
                 }
             } catch (error) {
-                console.error(error);
+                console.error("Fetch Error:", error);
                 failedCount++;
             }
         }
@@ -501,10 +414,10 @@ export default function Observation({ onLogout }) {
 
             <ScrollView contentContainerStyle={styles.content}>
 
-                {/* Top Controls Row: Location | Tracking */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 }}>
+                {/* Top Controls Row: Location */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 15 }}>
 
-                    {/* 1. Location Pill (Compact) */}
+                    {/* 1. Location Pill (Fuller width since tracking is gone) */}
                     <TouchableOpacity
                         onPress={() => {
                             if (!fetchingLocation) {
@@ -515,37 +428,13 @@ export default function Observation({ onLogout }) {
                         }}
                         style={{
                             flexDirection: 'row', alignItems: 'center',
-                            backgroundColor: theme.surface, paddingHorizontal: 10, paddingVertical: 6,
-                            borderRadius: 20, maxWidth: '60%', elevation: 2
+                            backgroundColor: theme.surface, paddingHorizontal: 15, paddingVertical: 8,
+                            borderRadius: 20, width: '100%', elevation: 2, justifyContent: 'center'
                         }}
                     >
-                        <MaterialCommunityIcons name="crosshairs-gps" size={16} color={theme.primary} style={{ marginRight: 4 }} />
-                        <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: '600', color: theme.text }}>
+                        <MaterialCommunityIcons name="crosshairs-gps" size={18} color={theme.primary} style={{ marginRight: 8 }} />
+                        <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: '600', color: theme.text }}>
                             {form.areaName || "Locating..."}
-                        </Text>
-                    </TouchableOpacity>
-
-                    {/* 2. Tracking Pill (Compact) */}
-                    <TouchableOpacity
-                        onPress={isTracking ? stopTracking : startTracking}
-                        style={{
-                            flexDirection: 'row', alignItems: 'center',
-                            backgroundColor: isTracking ? colors.error : theme.surface, // Red if tracking, Surface if not
-                            paddingHorizontal: 12, paddingVertical: 6,
-                            borderRadius: 20, elevation: 2,
-                            borderWidth: isTracking ? 0 : 1, borderColor: theme.border
-                        }}
-                    >
-                        <MaterialCommunityIcons
-                            name={isTracking ? "stop" : "play"}
-                            size={16}
-                            color={isTracking ? "#FFF" : theme.primary}
-                        />
-                        <Text style={{
-                            fontSize: 11, fontWeight: 'bold', marginLeft: 6,
-                            color: isTracking ? "#FFF" : theme.text
-                        }}>
-                            {totalDistance < 1 ? (totalDistance * 1000).toFixed(0) + "m" : totalDistance.toFixed(2) + "km"}
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -553,6 +442,12 @@ export default function Observation({ onLogout }) {
                 {/* Taxon Section */}
                 <View style={[styles.card, { backgroundColor: theme.surface }]}>
                     <Text style={[styles.sectionTitle, { color: theme.secondary }]}>Taxonomy</Text>
+
+                    <CategorySelect
+                        category={form.category}
+                        onPress={() => setShowCategoryModal(true)}
+                        theme={theme}
+                    />
 
                     <InputField
                         label="Common Name *"
@@ -562,7 +457,7 @@ export default function Observation({ onLogout }) {
                         theme={theme}
                     />
 
-                    {/* Scientific Name 1 - ALWAYS VISIBLE (Dropdown) */}
+                    {/* Scientific Name - Dropdown */}
                     <View style={styles.inputGroup}>
                         <Text style={[styles.label, { color: theme.textSecondary }]}>Scientific Name (Searchable)</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -592,11 +487,31 @@ export default function Observation({ onLogout }) {
                         </View>
                     </View>
 
-                    <CategorySelect
-                        category={form.category}
-                        onPress={() => setShowCategoryModal(true)}
-                        theme={theme}
-                    />
+                    {/* Toggle Notes Button */}
+                    <TouchableOpacity
+                        onPress={() => setShowNotes(!showNotes)}
+                        style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5, marginBottom: showNotes ? 10 : 0 }}
+                    >
+                        <MaterialCommunityIcons
+                            name={showNotes ? "minus-circle-outline" : "plus-circle-outline"}
+                            size={18}
+                            color={theme.primary}
+                        />
+                        <Text style={{ marginLeft: 6, color: theme.primary, fontSize: 13, fontWeight: '600' }}>
+                            {showNotes ? "Hide Notes" : "Add Notes"}
+                        </Text>
+                    </TouchableOpacity>
+
+                    {showNotes && (
+                        <InputField
+                            label="Notes"
+                            value={form.notes}
+                            onChangeText={(t) => updateForm('notes', t)}
+                            placeholder="Optional observations..."
+                            multiline={true}
+                            theme={theme}
+                        />
+                    )}
                 </View>
 
                 {/* View Results Link - Underneath the taxonomy card */}
