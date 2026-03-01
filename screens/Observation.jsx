@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator, Modal, FlatList, TouchableWithoutFeedback } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator, Modal, FlatList, TouchableWithoutFeedback, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,6 +11,7 @@ import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
 
 import colors from '../colors/colors';
+import CustomAlert from '../components/CustomAlert';
 import { CATEGORIES } from '../constants/categories';
 import { ICONS, getCategoryIcon } from '../constants/icons';
 import { Asset } from 'expo-asset';
@@ -93,6 +94,15 @@ export default function Observation({ onLogout }) {
     const [availableScientificNames, setAvailableScientificNames] = useState([]);
     const [isExcelLoaded, setIsExcelLoaded] = useState(false);
 
+    // Custom Alert State
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({ title: '', message: '', buttons: [] });
+
+    const showAlert = (title, message, buttons = []) => {
+        setAlertConfig({ title, message, buttons });
+        setAlertVisible(true);
+    };
+
     // 1. Load Excel File with Smart Caching
     useEffect(() => {
         const loadExcelData = async () => {
@@ -145,7 +155,7 @@ export default function Observation({ onLogout }) {
                 setIsExcelLoaded(true);
             } catch (error) {
                 console.error("Error loading Excel:", error);
-                Alert.alert("Error", "Failed to load database.");
+                showAlert("Error", "Failed to load database.");
             }
         };
 
@@ -171,7 +181,7 @@ export default function Observation({ onLogout }) {
         (async () => {
             let { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
-                Alert.alert('Permission to access location was denied');
+                showAlert('Permission Denied', 'Permission to access location was denied');
                 setFetchingLocation(false);
                 return;
             }
@@ -270,12 +280,12 @@ export default function Observation({ onLogout }) {
 
     const handleAddToList = () => {
         if (!form.commonName || !form.category) {
-            Alert.alert("Missing Fields", "Please enter at least a Common Name and Category.");
+            showAlert("Missing Fields", "Please enter at least a Common Name and Category.");
             return;
         }
 
         if (!form.latitude || !form.longitude) {
-            Alert.alert("Location Missing", "We are still fetching your location or permission was denied.");
+            showAlert("Location Missing", "We are still fetching your location or permission was denied.");
             return;
         }
 
@@ -365,11 +375,11 @@ export default function Observation({ onLogout }) {
         setLoading(false);
 
         if (failedCount === 0) {
-            Alert.alert("Success", `All ${successCount} observations uploaded successfully!`);
+            showAlert("Success", `All ${successCount} observations uploaded successfully!`);
             setObservationsList([]);
             AsyncStorage.removeItem('observationsList');
         } else {
-            Alert.alert("Partial Success", `Uploaded ${successCount} items. ${failedCount} failed. Please try again.`);
+            showAlert("Partial Success", `Uploaded ${successCount} items. ${failedCount} failed. Please try again.`);
         }
     };
 
@@ -394,7 +404,7 @@ export default function Observation({ onLogout }) {
                     ) : (
                         <TouchableOpacity
                             onPress={() => {
-                                Alert.alert(
+                                showAlert(
                                     "Location Status",
                                     form.latitude
                                         ? `GPS Active\nArea: ${form.areaName}\nLat: ${parseFloat(form.latitude).toFixed(4)}\nLng: ${parseFloat(form.longitude).toFixed(4)}`
@@ -411,191 +421,195 @@ export default function Observation({ onLogout }) {
                     )}
                 </View>
             </View>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                style={{ flex: 1 }}
+            >
+                <ScrollView contentContainerStyle={styles.content}>
 
-            <ScrollView contentContainerStyle={styles.content}>
+                    {/* Top Controls Row: Location */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 15 }}>
 
-                {/* Top Controls Row: Location */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 15 }}>
-
-                    {/* 1. Location Pill (Fuller width since tracking is gone) */}
-                    <TouchableOpacity
-                        onPress={() => {
-                            if (!fetchingLocation) {
-                                setFetchingLocation(true);
-                                // Simple feedback, actual refetch is auto-handled by effect but we can trigger loading state
-                                setTimeout(() => setFetchingLocation(false), 1000);
-                            }
-                        }}
-                        style={{
-                            flexDirection: 'row', alignItems: 'center',
-                            backgroundColor: theme.surface, paddingHorizontal: 15, paddingVertical: 8,
-                            borderRadius: 20, width: '100%', elevation: 2, justifyContent: 'center'
-                        }}
-                    >
-                        <MaterialCommunityIcons name="crosshairs-gps" size={18} color={theme.primary} style={{ marginRight: 8 }} />
-                        <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: '600', color: theme.text }}>
-                            {form.areaName || "Locating..."}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Taxon Section */}
-                <View style={[styles.card, { backgroundColor: theme.surface }]}>
-                    <Text style={[styles.sectionTitle, { color: theme.secondary }]}>Taxonomy</Text>
-
-                    <CategorySelect
-                        category={form.category}
-                        onPress={() => setShowCategoryModal(true)}
-                        theme={theme}
-                    />
-
-                    <InputField
-                        label="Common Name *"
-                        value={form.commonName}
-                        onChangeText={(t) => updateForm('commonName', t)}
-                        placeholder="e.g. Red Rose"
-                        theme={theme}
-                    />
-
-                    {/* Scientific Name - Dropdown */}
-                    <View style={styles.inputGroup}>
-                        <Text style={[styles.label, { color: theme.textSecondary }]}>Scientific Name (Searchable)</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <TextInput
-                                style={[
-                                    styles.input,
-                                    {
-                                        flex: 1,
-                                        color: theme.text,
-                                        borderBottomColor: theme.border,
-                                        height: 40
-                                    }
-                                ]}
-                                value={form.scientificName}
-                                onChangeText={(t) => updateForm('scientificName', t)}
-                                placeholder="Search or Enter Name"
-                                placeholderTextColor={theme.textLight}
-                            />
-                            {availableScientificNames.length > 0 && (
-                                <TouchableOpacity
-                                    onPress={() => setShowScientificModal(true)}
-                                    style={{ padding: 8, marginLeft: 8 }}
-                                >
-                                    <MaterialCommunityIcons name="menu-down" size={24} color={theme.primary} />
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                    </View>
-
-                    {/* Toggle Notes Button */}
-                    <TouchableOpacity
-                        onPress={() => setShowNotes(!showNotes)}
-                        style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5, marginBottom: showNotes ? 10 : 0 }}
-                    >
-                        <MaterialCommunityIcons
-                            name={showNotes ? "minus-circle-outline" : "plus-circle-outline"}
-                            size={18}
-                            color={theme.primary}
-                        />
-                        <Text style={{ marginLeft: 6, color: theme.primary, fontSize: 13, fontWeight: '600' }}>
-                            {showNotes ? "Hide Notes" : "Add Notes"}
-                        </Text>
-                    </TouchableOpacity>
-
-                    {showNotes && (
-                        <InputField
-                            label="Notes"
-                            value={form.notes}
-                            onChangeText={(t) => updateForm('notes', t)}
-                            placeholder="Optional observations..."
-                            multiline={true}
-                            theme={theme}
-                        />
-                    )}
-                </View>
-
-                {/* View Results Link - Underneath the taxonomy card */}
-                <TouchableOpacity
-                    onPress={() => navigation.navigate('Results')}
-                    style={{ alignSelf: 'center', marginTop: 15, marginBottom: 5 }}
-                >
-                    <Text style={{ color: theme.primary, fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' }}>
-                        View all submitted observations
-                    </Text>
-                </TouchableOpacity>
-
-                {fetchingLocation && (
-                    <View style={{ marginTop: 10, alignItems: 'center' }}>
-                        <ActivityIndicator size="small" color={theme.primary} />
-                    </View>
-                )}
-
-                {/* Add to List Action - Floating FAB */}
-                <TouchableOpacity
-                    onPress={handleAddToList}
-                    disabled={fetchingLocation}
-                    activeOpacity={0.8}
-                    style={styles.addButtonWrapper}
-                >
-                    <LinearGradient
-                        colors={[colors.vividPink, colors.warmPeach]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.mainActionButton}
-                    >
-                        <Text style={styles.actionButtonText}>
-                            {fetchingLocation ? "WAITING FOR GPS..." : "ADD OBSERVATION"}
-                        </Text>
-                        <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
-                    </LinearGradient>
-                </TouchableOpacity>
-
-                {/* List Staged for Upload - Minimal List */}
-                {observationsList.length > 0 && (
-                    <View style={styles.listContainer}>
-                        <Text style={[styles.sectionLabel, { color: theme.textSecondary, marginBottom: 10, paddingLeft: 4 }]}>PENDING UPLOADS</Text>
-
-                        {observationsList.map((item) => (
-                            <View key={item.id} style={[styles.pendingItem, { backgroundColor: isDark ? '#252525' : '#FFF', borderLeftColor: colors.vividPink }]}>
-                                <View style={[styles.miniIcon, { backgroundColor: isDark ? '#333' : '#F5F5F5' }]}>
-                                    <MaterialCommunityIcons name={getCategoryIcon(item.category)} size={20} color={theme.primary} />
-                                </View>
-
-                                <View style={styles.itemMeta}>
-                                    <Text style={[styles.itemTitle, { color: theme.text }]}>{item.commonName}</Text>
-                                    <View style={{ flexDirection: 'row' }}>
-                                        <Text style={[styles.itemSub, { color: theme.textSecondary }]}>{item.count} • {item.areaName}</Text>
-                                    </View>
-                                </View>
-
-                                <View style={styles.countControls}>
-                                    <TouchableOpacity onPress={() => updateItemCount(item.id, -1)} style={styles.iconBtn}>
-                                        <MaterialCommunityIcons name="minus" size={16} color={theme.text} />
-                                    </TouchableOpacity>
-
-                                    <TouchableOpacity onPress={() => updateItemCount(item.id, 1)} style={styles.iconBtn}>
-                                        <MaterialCommunityIcons name="plus" size={16} color={theme.text} />
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        ))}
-
+                        {/* 1. Location Pill (Fuller width since tracking is gone) */}
                         <TouchableOpacity
-                            onPress={handleSubmitAll}
-                            disabled={loading}
-                            style={{ marginTop: 15, marginBottom: 50 }}
+                            onPress={() => {
+                                if (!fetchingLocation) {
+                                    setFetchingLocation(true);
+                                    // Simple feedback, actual refetch is auto-handled by effect but we can trigger loading state
+                                    setTimeout(() => setFetchingLocation(false), 1000);
+                                }
+                            }}
+                            style={{
+                                flexDirection: 'row', alignItems: 'center',
+                                backgroundColor: theme.surface, paddingHorizontal: 15, paddingVertical: 8,
+                                borderRadius: 20, width: '100%', elevation: 2, justifyContent: 'center'
+                            }}
                         >
-                            <LinearGradient
-                                colors={[colors.neonPurple, colors.softPurple]}
-                                style={styles.uploadButton}
-                            >
-                                {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.uploadText}>UPLOAD ALL ({observationsList.length})</Text>}
-                            </LinearGradient>
+                            <MaterialCommunityIcons name="crosshairs-gps" size={18} color={theme.primary} style={{ marginRight: 8 }} />
+                            <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: '600', color: theme.text }}>
+                                {form.areaName || "Locating..."}
+                            </Text>
                         </TouchableOpacity>
                     </View>
-                )}
 
-            </ScrollView>
+                    {/* Taxon Section */}
+                    <View style={[styles.card, { backgroundColor: theme.surface }]}>
+                        <Text style={[styles.sectionTitle, { color: theme.secondary }]}>Taxonomy</Text>
+
+                        <CategorySelect
+                            category={form.category}
+                            onPress={() => setShowCategoryModal(true)}
+                            theme={theme}
+                        />
+
+                        <InputField
+                            label="Common Name *"
+                            value={form.commonName}
+                            onChangeText={(t) => updateForm('commonName', t)}
+                            placeholder="e.g. Red Rose"
+                            theme={theme}
+                        />
+
+                        {/* Scientific Name - Dropdown */}
+                        <View style={styles.inputGroup}>
+                            <Text style={[styles.label, { color: theme.textSecondary }]}>Scientific Name (Searchable)</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <TextInput
+                                    style={[
+                                        styles.input,
+                                        {
+                                            flex: 1,
+                                            color: theme.text,
+                                            borderBottomColor: theme.border,
+                                            height: 40
+                                        }
+                                    ]}
+                                    value={form.scientificName}
+                                    onChangeText={(t) => updateForm('scientificName', t)}
+                                    placeholder="Search or Enter Name"
+                                    placeholderTextColor={theme.textLight}
+                                />
+                                {availableScientificNames.length > 0 && (
+                                    <TouchableOpacity
+                                        onPress={() => setShowScientificModal(true)}
+                                        style={{ padding: 8, marginLeft: 8 }}
+                                    >
+                                        <MaterialCommunityIcons name="menu-down" size={24} color={theme.primary} />
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                        </View>
+
+                        {/* Toggle Notes Button */}
+                        <TouchableOpacity
+                            onPress={() => setShowNotes(!showNotes)}
+                            style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5, marginBottom: showNotes ? 10 : 0 }}
+                        >
+                            <MaterialCommunityIcons
+                                name={showNotes ? "minus-circle-outline" : "plus-circle-outline"}
+                                size={18}
+                                color={theme.primary}
+                            />
+                            <Text style={{ marginLeft: 6, color: theme.primary, fontSize: 13, fontWeight: '600' }}>
+                                {showNotes ? "Hide Notes" : "Add Notes"}
+                            </Text>
+                        </TouchableOpacity>
+
+                        {showNotes && (
+                            <InputField
+                                label="Notes"
+                                value={form.notes}
+                                onChangeText={(t) => updateForm('notes', t)}
+                                placeholder="Optional observations..."
+                                multiline={true}
+                                theme={theme}
+                            />
+                        )}
+                    </View>
+
+                    {/* View Results Link - Underneath the taxonomy card */}
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate('Results')}
+                        style={{ alignSelf: 'center', marginTop: 15, marginBottom: 5 }}
+                    >
+                        <Text style={{ color: theme.primary, fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' }}>
+                            View all submitted observations
+                        </Text>
+                    </TouchableOpacity>
+
+                    {fetchingLocation && (
+                        <View style={{ marginTop: 10, alignItems: 'center' }}>
+                            <ActivityIndicator size="small" color={theme.primary} />
+                        </View>
+                    )}
+
+                    {/* Add to List Action - Floating FAB */}
+                    <TouchableOpacity
+                        onPress={handleAddToList}
+                        disabled={fetchingLocation}
+                        activeOpacity={0.8}
+                        style={styles.addButtonWrapper}
+                    >
+                        <LinearGradient
+                            colors={[colors.vividPink, colors.warmPeach]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.mainActionButton}
+                        >
+                            <Text style={styles.actionButtonText}>
+                                {fetchingLocation ? "WAITING FOR GPS..." : "ADD OBSERVATION"}
+                            </Text>
+                            <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
+                        </LinearGradient>
+                    </TouchableOpacity>
+
+                    {/* List Staged for Upload - Minimal List */}
+                    {observationsList.length > 0 && (
+                        <View style={styles.listContainer}>
+                            <Text style={[styles.sectionLabel, { color: theme.textSecondary, marginBottom: 10, paddingLeft: 4 }]}>PENDING UPLOADS</Text>
+
+                            {observationsList.map((item) => (
+                                <View key={item.id} style={[styles.pendingItem, { backgroundColor: isDark ? '#252525' : '#FFF', borderLeftColor: colors.vividPink }]}>
+                                    <View style={[styles.miniIcon, { backgroundColor: isDark ? '#333' : '#F5F5F5' }]}>
+                                        <MaterialCommunityIcons name={getCategoryIcon(item.category)} size={20} color={theme.primary} />
+                                    </View>
+
+                                    <View style={styles.itemMeta}>
+                                        <Text style={[styles.itemTitle, { color: theme.text }]}>{item.commonName}</Text>
+                                        <View style={{ flexDirection: 'row' }}>
+                                            <Text style={[styles.itemSub, { color: theme.textSecondary }]}>{item.count} • {item.areaName}</Text>
+                                        </View>
+                                    </View>
+
+                                    <View style={styles.countControls}>
+                                        <TouchableOpacity onPress={() => updateItemCount(item.id, -1)} style={styles.iconBtn}>
+                                            <MaterialCommunityIcons name="minus" size={16} color={theme.text} />
+                                        </TouchableOpacity>
+
+                                        <TouchableOpacity onPress={() => updateItemCount(item.id, 1)} style={styles.iconBtn}>
+                                            <MaterialCommunityIcons name="plus" size={16} color={theme.text} />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            ))}
+
+                            <TouchableOpacity
+                                onPress={handleSubmitAll}
+                                disabled={loading}
+                                style={{ marginTop: 15, marginBottom: 50 }}
+                            >
+                                <LinearGradient
+                                    colors={[colors.neonPurple, colors.softPurple]}
+                                    style={styles.uploadButton}
+                                >
+                                    {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.uploadText}>UPLOAD ALL ({observationsList.length})</Text>}
+                                </LinearGradient>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
+                </ScrollView>
+            </KeyboardAvoidingView>
 
             {/* Category Modal (Classic) */}
             <Modal
@@ -694,6 +708,13 @@ export default function Observation({ onLogout }) {
             </Modal>
 
             <StatusBar style={isDark ? "light" : "dark"} />
+            <CustomAlert
+                visible={alertVisible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                buttons={alertConfig.buttons}
+                onClose={() => setAlertVisible(false)}
+            />
         </SafeAreaView>
     );
 }

@@ -41,13 +41,10 @@ const CustomAlert = ({ visible, title, message, buttons = [], onClose }) => {
                                             if (btn.onPress) btn.onPress();
                                             else if (onClose) onClose();
                                         }}
-                                        style={[
-                                            styles.buttonWrapper,
-                                            isCancel ? styles.cancelButtonWrapper : {}
-                                        ]}
+                                        style={styles.buttonWrapper}
                                     >
                                         {isCancel ? (
-                                            <View style={styles.textBtn}>
+                                            <View style={styles.cancelButton}>
                                                 <Text style={styles.cancelText}>{btn.text}</Text>
                                             </View>
                                         ) : (
@@ -109,39 +106,37 @@ const styles = StyleSheet.create({
     },
     buttonContainer: {
         flexDirection: 'row',
-        justifyContent: 'center', // Center buttons if few, or stretch?
-        flexWrap: 'wrap',
+        justifyContent: 'center',
+        alignItems: 'center', // Added: Vertical alignment
         gap: 12,
         width: '100%',
     },
     buttonWrapper: {
         flex: 1,
-        minWidth: '40%',
-    },
-    cancelButtonWrapper: {
-        backgroundColor: 'transparent',
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingVertical: 12,
+        // Removed minWidth to allow natural flex
     },
     primaryButton: {
-        paddingVertical: 12,
-        paddingHorizontal: 20,
+        height: 48, // Added: Solid height for consistency
         borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
+        paddingHorizontal: 12,
     },
-    textBtn: {
-        paddingVertical: 12,
+    cancelButton: {
+        height: 48, // Added: Matching height
+        borderRadius: 12,
         alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 12,
+        backgroundColor: 'transparent',
     },
     primaryButtonText: {
         color: '#FFF',
-        fontWeight: '600',
+        fontWeight: '700',
         fontSize: 15,
     },
     cancelText: {
-        color: colors.textLight,
+        color: colors.textSecondary,
         fontWeight: '600',
         fontSize: 15,
     },

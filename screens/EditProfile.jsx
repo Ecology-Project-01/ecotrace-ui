@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TextInput, ScrollView, TouchableOpacity, Platform, KeyboardAvoidingView } from 'react-native';
+import { StyleSheet, Text, View, TextInput, ScrollView, TouchableOpacity, Platform, KeyboardAvoidingView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useSelector } from 'react-redux';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useDispatch, useSelector } from 'react-redux';
 import colors from '../colors/colors';
+import { setUser } from '../store/slices/userSlice';
+import * as SecureStore from 'expo-secure-store';
+import CustomAlert from '../components/CustomAlert';
+
+const LOCAL_IP = "192.168.1.8";
+const API_URL = `http://${LOCAL_IP}:4000`;
 
 export default function EditProfile({ navigation }) {
     const isDark = useSelector((state) => state.theme.isDark);
@@ -17,8 +23,61 @@ export default function EditProfile({ navigation }) {
         setEmail(auth_email || '');
     }, [auth_username, auth_email]);
 
+    const dispatch = useDispatch();
     const theme = isDark ? colors.dark : colors.light;
+
+    // Custom Alert State
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({ title: '', message: '', buttons: [] });
+
+    const showAlert = (title, message, buttons = []) => {
+        setAlertConfig({ title, message, buttons });
+        setAlertVisible(true);
+    };
     const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+
+    const [isUpdating, setIsUpdating] = useState(false);
+    const isChanged = name !== (auth_username || '');
+
+    const updateUsername = async () => {
+        if (!isChanged || isUpdating) return;
+
+        setIsUpdating(true);
+        try {
+            const token = await SecureStore.getItemAsync('userToken');
+            const response = await fetch(`${API_URL}/auth/changeUsername`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    email: auth_email,
+                    newUsername: name
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Update Redux
+                dispatch(setUser({
+                    username: name,
+                    email: auth_email,
+                    role: auth_role,
+                    org: auth_org
+                }));
+                showAlert("Success", "Username updated successfully!");
+            } else {
+                showAlert("Error", data.err || "Failed to update username");
+            }
+        } catch (error) {
+            console.error(error);
+            showAlert("Error", "Network error. Please try again.");
+        } finally {
+            setIsUpdating(false);
+        }
+    };
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -57,7 +116,6 @@ export default function EditProfile({ navigation }) {
                                     <Ionicons name="camera" size={14} color="#FFF" />
                                 </TouchableOpacity>
                             </View>
-
                             <Text style={[styles.userName, { color: theme.text }]}>{name || "User"}</Text>
                             <Text style={[styles.userEmail, { color: theme.textSecondary }]}>{email}</Text>
                         </View>
@@ -78,20 +136,26 @@ export default function EditProfile({ navigation }) {
                                         placeholderTextColor={theme.textLight}
                                     />
                                 </View>
+                                {isChanged && (
+                                    <TouchableOpacity
+                                        onPress={updateUsername}
+                                        style={styles.updateTextButton}
+                                        disabled={isUpdating}
+                                    >
+                                        <Text style={[styles.updateText, { color: colors.primary }]}>
+                                            {isUpdating ? "Updating..." : "Update Username"}
+                                        </Text>
+                                    </TouchableOpacity>
+                                )}
                             </View>
 
                             <View style={styles.inputGroup}>
                                 <Text style={[styles.label, { color: theme.textSecondary }]}>Email Address</Text>
                                 <View style={[styles.inputWrapper, { backgroundColor: theme.background, borderColor: theme.border }]}>
                                     <Ionicons name="mail-outline" size={18} color={theme.textLight} style={styles.inputIcon} />
-                                    <TextInput
-                                        style={[styles.input, { color: theme.text }]}
-                                        value={email}
-                                        onChangeText={setEmail}
-                                        placeholder="Enter email"
-                                        placeholderTextColor={theme.textLight}
-                                        keyboardType="email-address"
-                                    />
+                                    <Text style={[styles.input, { color: theme.text }]}>
+                                        {email || 'null'}
+                                    </Text>
                                 </View>
                             </View>
                         </View>
@@ -116,6 +180,14 @@ export default function EditProfile({ navigation }) {
 
                 </ScrollView>
             </KeyboardAvoidingView>
+
+            <CustomAlert
+                visible={alertVisible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                buttons={alertConfig.buttons}
+                onClose={() => setAlertVisible(false)}
+            />
         </SafeAreaView>
     );
 }
@@ -190,11 +262,28 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         borderWidth: 3,
     },
+    nameActionRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+    },
     userName: {
         fontSize: 22,
         fontWeight: 'bold',
         marginBottom: 4,
         textAlign: 'center',
+    },
+    updateTextButton: {
+        paddingVertical: 8,
+        paddingHorizontal: 4,
+        alignSelf: 'flex-start',
+    },
+    updateText: {
+        fontSize: 13,
+        fontWeight: '700',
+        textDecorationLine: 'underline',
+        left: 140,
     },
     userEmail: {
         fontSize: 14,

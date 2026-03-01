@@ -1,10 +1,12 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Switch, Platform } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Switch, Platform, Alert } from 'react-native';
+import CustomAlert from '../components/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSelector, useDispatch } from 'react-redux';
 import { toggleTheme } from '../store/slices/themeSlice';
 import colors from '../colors/colors';
+import { useState } from 'react';
 
 // Helper component for settings items
 // Now accepts `theme` prop to style dynamically
@@ -26,6 +28,26 @@ export default function Settings({ navigation, onLogout }) {
     const isDark = useSelector((state) => state.theme.isDark);
     const { auth_username, auth_email, auth_role, auth_org } = useSelector((state) => state.user);
     const dispatch = useDispatch();
+
+    // Custom Alert State
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({ title: '', message: '', buttons: [] });
+
+    const showAlert = (title, message, buttons = []) => {
+        setAlertConfig({ title, message, buttons });
+        setAlertVisible(true);
+    };
+
+    const handleLogout = () => {
+        showAlert(
+            "Logout",
+            "Are you sure you want to log out of EcoTrace?",
+            [
+                { text: "Cancel", style: "cancel" },
+                { text: "Log Out", onPress: onLogout }
+            ]
+        );
+    };
 
     // Select the active theme object
     const theme = isDark ? colors.dark : colors.light;
@@ -98,18 +120,19 @@ export default function Settings({ navigation, onLogout }) {
                     <View style={styles.section}>
                         <Text style={[styles.sectionHeader, { color: colors.purple }]}>Administration</Text>
                         <View style={styles.cardContainer}>
-                            <SettingItem
-                                title="Admin Rights"
-                                subtitle="Tools for administrators"
-                                theme={theme}
-                                onPress={() => navigation.navigate('AdminRights')}
-                            />
-                            {auth_role === 'superadmin' && (
+                            {auth_role === 'superadmin' ? (
                                 <SettingItem
                                     title="Superadmin Rights"
                                     subtitle="Full system control"
                                     theme={theme}
                                     onPress={() => navigation.navigate('SuperAdminRights')}
+                                />
+                            ) : (
+                                <SettingItem
+                                    title="Admin Rights"
+                                    subtitle="Tools for administrators"
+                                    theme={theme}
+                                    onPress={() => navigation.navigate('AdminRights')}
                                 />
                             )}
                         </View>
@@ -118,11 +141,19 @@ export default function Settings({ navigation, onLogout }) {
 
 
                 {/* Logout */}
-                <TouchableOpacity onPress={onLogout} activeOpacity={0.8} style={styles.logoutBtnContainer}>
+                <TouchableOpacity onPress={handleLogout} activeOpacity={0.8} style={styles.logoutBtnContainer}>
                     <Text style={[styles.logoutText, { color: colors.red }]}>Log Out</Text>
                 </TouchableOpacity>
 
             </ScrollView>
+
+            <CustomAlert
+                visible={alertVisible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                buttons={alertConfig.buttons}
+                onClose={() => setAlertVisible(false)}
+            />
             <StatusBar style={theme.statusBarStyle === 'light' ? 'light' : 'dark'} />
         </SafeAreaView>
     );

@@ -11,6 +11,7 @@ import { ICONS, getCategoryIcon } from '../constants/icons';
 import * as SecureStore from 'expo-secure-store';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import CustomAlert from '../components/CustomAlert';
 
 const LOCAL_IP = "192.168.1.8";
 const API_URL = `http://${LOCAL_IP}:4000`;
@@ -52,6 +53,15 @@ export default function Results() {
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({});
     const [allData, setAllData] = useState([]);
+
+    // Custom Alert State
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({ title: '', message: '', buttons: [] });
+
+    const showAlert = (title, message, buttons = []) => {
+        setAlertConfig({ title, message, buttons });
+        setAlertVisible(true);
+    };
 
     useEffect(() => {
         fetchObservations();
@@ -121,7 +131,7 @@ export default function Results() {
 
     const exportToCSV = async () => {
         if (allData.length === 0) {
-            Alert.alert("No Data", "There are no observations to export.");
+            showAlert("No Data", "There are no observations to export.");
             return;
         }
 
@@ -206,12 +216,12 @@ export default function Results() {
             if (await Sharing.isAvailableAsync()) {
                 await Sharing.shareAsync(fileUri);
             } else {
-                Alert.alert("Error", "Sharing is not available on this device");
+                showAlert("Error", "Sharing is not available on this device");
             }
 
         } catch (error) {
             console.error("Export Error:", error);
-            Alert.alert("Error", "Failed to export CSV file.");
+            showAlert("Error", "Failed to export CSV file.");
         }
     };
 
@@ -273,6 +283,13 @@ export default function Results() {
                     )}
                 </ScrollView>
             )}
+            <CustomAlert
+                visible={alertVisible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                buttons={alertConfig.buttons}
+                onClose={() => setAlertVisible(false)}
+            />
         </SafeAreaView>
     );
 }

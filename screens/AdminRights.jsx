@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, FlatList, ActivityIndicator, Alert, RefreshControl } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, FlatList, ActivityIndicator, Alert, RefreshControl, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import colors from '../colors/colors';
 import { LinearGradient } from 'expo-linear-gradient';
+import CustomAlert from '../components/CustomAlert';
 
 const LOCAL_IP = "192.168.1.8";
 const API_URL = `http://${LOCAL_IP}:4000`;
 
 export default function AdminRights({ navigation }) {
     const isDark = useSelector((state) => state.theme.isDark);
-    const { auth_role } = useSelector((state) => state.user);
+    const { auth_role, auth_org } = useSelector((state) => state.user);
     const theme = isDark ? colors.dark : colors.light;
 
     const [users, setUsers] = useState([]);
@@ -23,20 +24,29 @@ export default function AdminRights({ navigation }) {
         fetchUsers();
     }, []);
 
+    const [inviteEmail, setInviteEmail] = useState('');
+    const [isInviting, setIsInviting] = useState(false);
+
+    // Custom Alert State
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({ title: '', message: '', buttons: [] });
+
+    const showAlert = (title, message, buttons = []) => {
+        setAlertConfig({ title, message, buttons });
+        setAlertVisible(true);
+    };
+
     const fetchUsers = async () => {
         try {
             const token = await SecureStore.getItemAsync('userToken');
             if (!token) {
-                console.warn("[AdminRights] No token found in SecureStore");
-                Alert.alert("Session Error", "Please logout and login again.");
+                showAlert("Session Error", "Please logout and login again.");
                 setLoading(false);
                 return;
             }
 
-            console.log(`[AdminRights] Fetching users from: ${API_URL}/system-init/getAllUsers`);
-
             const response = await fetch(`${API_URL}/system-init/getAllUsers`, {
-                method: 'GET', // Explicitly GET
+                method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Accept': 'application/json'
@@ -46,11 +56,11 @@ export default function AdminRights({ navigation }) {
             if (response.ok) {
                 setUsers(data);
             } else {
-                Alert.alert("Error", data.err || "Failed to fetch users");
+                showAlert("Error", data.err || "Failed to fetch users");
             }
         } catch (error) {
             console.error("[AdminRights] Fetch error:", error);
-            Alert.alert("Network Error", "Could not connect to server");
+            showAlert("Network Error", "Could not connect to server");
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -58,16 +68,12 @@ export default function AdminRights({ navigation }) {
     };
 
     const handlePromote = (email) => {
-        Alert.alert(
+        showAlert(
             "Promote to Admin",
             `Are you sure you want to promote ${email} to Admin?`,
             [
                 { text: "Cancel", style: "cancel" },
-                {
-                    text: "Promote",
-                    onPress: () => processPromotion(email),
-                    style: "default"
-                }
+                { text: "Promote", onPress: () => processPromotion(email) }
             ]
         );
     };
@@ -85,28 +91,24 @@ export default function AdminRights({ navigation }) {
             });
 
             if (response.ok) {
-                Alert.alert("Success", "User promoted to Admin successfully");
+                showAlert("Success", "User promoted to Admin successfully");
                 fetchUsers();
             } else {
                 const data = await response.json();
-                Alert.alert("Error", data.err || "Failed to promote user");
+                showAlert("Error", data.err || "Failed to promote user");
             }
         } catch (error) {
-            Alert.alert("Error", "Something went wrong");
+            showAlert("Error", "Something went wrong");
         }
     };
 
     const handleDelete = (email) => {
-        Alert.alert(
+        showAlert(
             "Delete User",
             `Are you sure you want to permanently delete ${email}?`,
             [
                 { text: "Cancel", style: "cancel" },
-                {
-                    text: "Delete",
-                    onPress: () => processDelete(email),
-                    style: "destructive"
-                }
+                { text: "Delete", onPress: () => processDelete(email), style: "destructive" }
             ]
         );
     };
@@ -124,14 +126,83 @@ export default function AdminRights({ navigation }) {
             });
 
             if (response.ok) {
-                Alert.alert("Success", "User deleted successfully");
+                showAlert("Success", "User deleted successfully");
                 fetchUsers();
             } else {
                 const data = await response.json();
-                Alert.alert("Error", data.err || "Failed to delete user");
+                showAlert("Error", data.err || "Failed to delete user");
             }
         } catch (error) {
-            Alert.alert("Error", "Something went wrong");
+            showAlert("Error", "Something went wrong");
+        }
+    };
+
+    const handleRemoveFromOrg = (email) => {
+        showAlert(
+            "Remove from Organization",
+            `Are you sure you want to remove ${email} from your organization?`,
+            [
+                { text: "Cancel", style: "cancel" },
+                { text: "Remove", onPress: () => processRemoveFromOrg(email), style: "destructive" }
+            ]
+        );
+    };
+
+    const processRemoveFromOrg = async (email) => {
+        try {
+            const token = await SecureStore.getItemAsync('userToken');
+            const response = await fetch(`${API_URL}/auth/removeFromOrg`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ email })
+            });
+
+            if (response.ok) {
+                showAlert("Success", "User removed from organization");
+                fetchUsers();
+            } else {
+                const data = await response.json();
+                showAlert("Error", data.err || "Failed to remove user");
+            }
+        } catch (error) {
+            showAlert("Error", "Network error");
+        }
+    };
+
+    const handleInviteUser = async () => {
+        if (!inviteEmail) {
+            showAlert("Input Error", "Please provide a user email.");
+            return;
+        }
+
+        setIsInviting(true);
+        try {
+            const token = await SecureStore.getItemAsync('userToken');
+            // Admins add users to their OWN organization
+            const response = await fetch(`${API_URL}/auth/addToOrg`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ email: inviteEmail, orgName: auth_org })
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                showAlert("Success", `User ${inviteEmail} invited to ${auth_org}!`);
+                setInviteEmail('');
+                fetchUsers();
+            } else {
+                showAlert("Failed", data.err || "Could not invite user");
+            }
+        } catch (error) {
+            showAlert("Error", "Network connection failed");
+        } finally {
+            setIsInviting(false);
         }
     };
 
@@ -144,32 +215,47 @@ export default function AdminRights({ navigation }) {
                 <View style={styles.userDetails}>
                     <Text style={[styles.username, { color: theme.text }]}>{item.username}</Text>
                     <Text style={[styles.email, { color: theme.textSecondary }]}>{item.email}</Text>
-                    <View style={[styles.roleBadge, { backgroundColor: item.role === 'admin' || item.role === 'superadmin' ? colors.softPurple : colors.softGreen }]}>
-                        <Text style={[styles.roleText, { color: item.role === 'admin' || item.role === 'superadmin' ? colors.purple : colors.primary }]}>
-                            {item.role.toUpperCase()}
-                        </Text>
+                    <View style={styles.badgeRow}>
+                        <View style={[styles.roleBadge, { backgroundColor: item.role === 'admin' ? '#ede9fe' : '#ecfdf5' }]}>
+                            <Text style={[styles.roleText, { color: item.role === 'admin' ? '#5b21b6' : '#047857' }]}>
+                                {item.role.toUpperCase()}
+                            </Text>
+                        </View>
+                        <View style={[styles.orgBadge, { backgroundColor: theme.background }]}>
+                            <Text style={[styles.orgText, { color: theme.textSecondary }]}>{item.org || 'Solo'}</Text>
+                        </View>
                     </View>
                 </View>
             </View>
 
             <View style={styles.actions}>
                 {item.role === 'user' && (
-                    <TouchableOpacity
-                        style={[styles.actionBtn, { backgroundColor: theme.isDark ? '#333' : '#f0f0f0' }]}
-                        onPress={() => handlePromote(item.email)}
-                    >
-                        <Ionicons name="shield-outline" size={20} color={colors.purple} />
-                        <Text style={[styles.actionText, { color: colors.purple }]}>Promote</Text>
-                    </TouchableOpacity>
-                )}
+                    <>
+                        <TouchableOpacity
+                            style={[styles.actionBtn, { backgroundColor: isDark ? '#333' : '#f0f0f0' }]}
+                            onPress={() => handlePromote(item.email)}
+                        >
+                            <Ionicons name="shield-outline" size={18} color={colors.purple} />
+                            <Text style={[styles.actionText, { color: colors.purple }]}>Admin</Text>
+                        </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={[styles.actionBtn, { backgroundColor: theme.isDark ? '#333' : '#f0f0f0' }]}
-                    onPress={() => handleDelete(item.email)}
-                >
-                    <Ionicons name="trash-outline" size={20} color={colors.red} />
-                    <Text style={[styles.actionText, { color: colors.red }]}>Delete</Text>
-                </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.actionBtn, { backgroundColor: isDark ? '#333' : '#f0f0f0' }]}
+                            onPress={() => handleRemoveFromOrg(item.email)}
+                        >
+                            <Ionicons name="person-remove-outline" size={18} color={colors.secondary} />
+                            <Text style={[styles.actionText, { color: colors.secondary }]}>Remove</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[styles.actionBtn, { backgroundColor: isDark ? '#333' : '#f0f0f0' }]}
+                            onPress={() => handleDelete(item.email)}
+                        >
+                            <Ionicons name="trash-outline" size={18} color={colors.red} />
+                            <Text style={[styles.actionText, { color: colors.red }]}>Delete</Text>
+                        </TouchableOpacity>
+                    </>
+                )}
             </View>
         </View>
     );
@@ -181,18 +267,15 @@ export default function AdminRights({ navigation }) {
                     <Ionicons name="arrow-back" size={24} color={theme.text} />
                 </TouchableOpacity>
                 <View>
-                    <Text style={[styles.headerTitle, { color: theme.text }]}>User Management</Text>
-                    <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
-                        Manage access and permissions
-                    </Text>
+                    <Text style={[styles.headerTitle, { color: theme.text }]}>Org Management</Text>
+                    <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>Manage your team members</Text>
                 </View>
             </View>
 
-            {loading ? (
-                <View style={styles.center}>
-                    <ActivityIndicator size="large" color={colors.primary} />
-                </View>
-            ) : (
+            <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                style={{ flex: 1 }}
+            >
                 <FlatList
                     data={users}
                     keyExtractor={(item) => item._id}
@@ -204,14 +287,48 @@ export default function AdminRights({ navigation }) {
                             fetchUsers();
                         }} />
                     }
+                    ListHeaderComponent={
+                        <View style={[styles.inviteCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                            <Text style={[styles.inviteTitle, { color: theme.text }]}>Add Member</Text>
+                            <View style={styles.inviteRow}>
+                                <TextInput
+                                    style={[styles.inviteInput, { backgroundColor: theme.background, color: theme.text, flex: 1 }]}
+                                    placeholder="New member email"
+                                    placeholderTextColor={theme.textLight}
+                                    value={inviteEmail}
+                                    onChangeText={setInviteEmail}
+                                    autoCapitalize="none"
+                                />
+                                <TouchableOpacity
+                                    style={[styles.inviteBtn, { backgroundColor: colors.primary, height: 48 }]}
+                                    onPress={handleInviteUser}
+                                    disabled={isInviting}
+                                >
+                                    {isInviting ? (
+                                        <ActivityIndicator size="small" color="#FFF" />
+                                    ) : (
+                                        <Ionicons name="add" size={24} color="#FFF" />
+                                    )}
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    }
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
                             <Ionicons name="people-outline" size={60} color={theme.textLight} />
-                            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No users found</Text>
+                            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No members fetched</Text>
                         </View>
                     }
                 />
-            )}
+            </KeyboardAvoidingView>
+
+            <CustomAlert
+                visible={alertVisible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                buttons={alertConfig.buttons}
+                onClose={() => setAlertVisible(false)}
+            />
         </SafeAreaView>
     );
 }
@@ -241,6 +358,39 @@ const styles = StyleSheet.create({
     listContent: {
         padding: 20,
         paddingBottom: 40,
+    },
+    inviteCard: {
+        padding: 20,
+        borderRadius: 20,
+        marginBottom: 24,
+        borderWidth: 1,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+        elevation: 3,
+    },
+    inviteTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        marginBottom: 15,
+    },
+    inviteRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    inviteInput: {
+        height: 48,
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        fontSize: 14,
+    },
+    inviteBtn: {
+        width: 48,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     userCard: {
         borderRadius: 16,
@@ -282,20 +432,34 @@ const styles = StyleSheet.create({
         fontSize: 14,
         marginBottom: 5,
     },
+    badgeRow: {
+        flexDirection: 'row',
+        gap: 8,
+    },
     roleBadge: {
-        alignSelf: 'flex-start',
         paddingHorizontal: 8,
         paddingVertical: 2,
-        borderRadius: 8,
+        borderRadius: 6,
     },
     roleText: {
         fontSize: 10,
         fontWeight: 'bold',
     },
+    orgBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.05)',
+    },
+    orgText: {
+        fontSize: 10,
+        fontWeight: '600',
+    },
     actions: {
         flexDirection: 'row',
         borderTopWidth: 1,
-        borderTopColor: '#eee',
+        borderTopColor: 'rgba(0,0,0,0.05)',
         paddingTop: 12,
         justifyContent: 'flex-end',
         gap: 10,
@@ -303,13 +467,13 @@ const styles = StyleSheet.create({
     actionBtn: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 15,
-        paddingVertical: 8,
-        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 8,
     },
     actionText: {
-        marginLeft: 6,
-        fontSize: 14,
+        marginLeft: 4,
+        fontSize: 12,
         fontWeight: '600',
     },
     center: {
@@ -318,7 +482,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     emptyContainer: {
-        marginTop: 100,
+        marginTop: 60,
         alignItems: 'center',
     },
     emptyText: {

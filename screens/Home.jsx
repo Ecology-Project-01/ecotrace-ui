@@ -96,15 +96,15 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   gradientButton: {
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: 40,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   buttonText: {
     color: '#FFF',
-    fontSize: 16,
+    fontSize: 22,
     fontWeight: 'bold',
-    letterSpacing: 0.5,
+    letterSpacing: 1.2,
   }
 });
