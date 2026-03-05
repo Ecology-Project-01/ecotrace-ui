@@ -12,16 +12,14 @@ import * as SecureStore from 'expo-secure-store';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import CustomAlert from '../components/CustomAlert';
-
-const LOCAL_IP = "192.168.1.8";
-const API_URL = `http://${LOCAL_IP}:4000`;
+import { API_URL } from '../constants/config';
 
 // Defined outside to prevent re-creation and potential context issues
 const CategoryCard = ({ category, items = [], theme, navigation }) => (
     <TouchableOpacity
         style={[styles.card, { backgroundColor: theme?.surface || '#fff' }]}
         activeOpacity={0.7}
-        onPress={() => navigation.navigate('CategoryDetails', { category, items })}
+        onPress={() => navigation.navigate('CategoryDetails', { category })}
     >
         <View style={styles.iconContainer}>
             <MaterialCommunityIcons
@@ -68,10 +66,12 @@ export default function Results() {
     }, []);
 
     const fetchObservations = async () => {
+        setLoading(true);
         try {
             const token = await SecureStore.getItemAsync('userToken');
 
-            const response = await fetch(`${API_URL}/observations`, {
+            // We fetch up to 100 items for the summary screen so the category counts look correct
+            const response = await fetch(`${API_URL}/observations?limit=100`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -81,17 +81,17 @@ export default function Results() {
                 console.warn("Server returned error status:", response.status);
                 setAllData([]);
                 setStats({});
-                setLoading(false);
                 return;
             }
 
-            const data = await response.json();
+            const result = await response.json();
+            const observations = result.data || [];
 
-            if (Array.isArray(data)) {
-                setAllData(data);
-                processCategories(data);
+            if (Array.isArray(observations)) {
+                setAllData(observations);
+                processCategories(observations);
             } else {
-                console.warn("Received non-array response:", data);
+                console.warn("Received unexpected response format:", result);
                 setAllData([]);
                 setStats({});
             }
@@ -283,6 +283,8 @@ export default function Results() {
                     )}
                 </ScrollView>
             )}
+
+
             <CustomAlert
                 visible={alertVisible}
                 title={alertConfig.title}
@@ -395,5 +397,23 @@ const styles = StyleSheet.create({
     cardSubtitle: {
         fontSize: 14,
         marginTop: 2,
+    },
+    pagination: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderTopWidth: 1,
+    },
+    pageBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 8,
+    },
+    pageIndicator: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        letterSpacing: 1,
     },
 });

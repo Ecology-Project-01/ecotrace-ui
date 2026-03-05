@@ -7,14 +7,49 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ICONS, getCategoryIcon } from '../constants/icons';
 import colors from '../colors/colors';
 
+import { API_URL } from '../constants/config';
+import * as SecureStore from 'expo-secure-store';
+import { ActivityIndicator } from 'react-native';
+
 export default function CategoryDetails() {
     const isDark = useSelector((state) => state.theme.isDark);
     const theme = isDark ? colors.dark : colors.light;
     const navigation = useNavigation();
     const route = useRoute();
-    const { category, items } = route.params;
+    const { category } = route.params;
 
+    const [items, setItems] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalRecords, setTotalRecords] = useState(0);
     const [selectedItem, setSelectedItem] = useState(null);
+
+    useEffect(() => {
+        fetchCategoryData(page);
+    }, [page]);
+
+    const fetchCategoryData = async (pageNum = 1) => {
+        setLoading(true);
+        try {
+            const token = await SecureStore.getItemAsync('userToken');
+            // Fetch ONLY the records for this category with pagination
+            const response = await fetch(`${API_URL}/observations?category=${category}&page=${pageNum}&limit=10`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error("Failed to fetch");
+
+            const result = await response.json();
+            setItems(result.data || []);
+            setTotalPages(result.pages || 1);
+            setTotalRecords(result.total || 0);
+        } catch (error) {
+            console.error("Error fetching category details:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const renderItem = ({ item }) => {
         const categoryColor = theme.primary; // Or map specific colors to categories
@@ -67,12 +102,16 @@ export default function CategoryDetails() {
                     <MaterialCommunityIcons name={ICONS.BACK} size={24} color={theme.text} />
                 </TouchableOpacity>
                 <View style={styles.headerCenter}>
-                    <Text style={[styles.headerTitle, { color: theme.text }]}>{category} ({items.length})</Text>
+                    <Text style={[styles.headerTitle, { color: theme.text }]}>{category} ({totalRecords})</Text>
                 </View>
                 <View style={styles.headerRight} />
             </View>
 
-            {items.length === 0 ? (
+            {loading ? (
+                <View style={styles.empty}>
+                    <ActivityIndicator size="large" color={theme.primary} />
+                </View>
+            ) : items.length === 0 ? (
                 <View style={styles.empty}>
                     <Text style={{ color: theme.textSecondary }}>No records found.</Text>
                 </View>
@@ -82,6 +121,33 @@ export default function CategoryDetails() {
                     keyExtractor={(item) => item._id}
                     renderItem={renderItem}
                     contentContainerStyle={styles.content}
+                    ListFooterComponent={
+                        totalPages > 1 && (
+                            <View style={styles.pagination}>
+                                <TouchableOpacity
+                                    onPress={() => setPage(p => Math.max(1, p - 1))}
+                                    disabled={page === 1}
+                                    style={[styles.pageBtn, page === 1 && { opacity: 0.3 }]}
+                                >
+                                    <MaterialCommunityIcons name="chevron-left" size={24} color={theme.primary} />
+                                    <Text style={{ color: theme.primary, fontWeight: 'bold' }}>PREV</Text>
+                                </TouchableOpacity>
+
+                                <Text style={[styles.pageIndicator, { color: theme.textSecondary }]}>
+                                    {page} / {totalPages}
+                                </Text>
+
+                                <TouchableOpacity
+                                    onPress={() => setPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={page === totalPages}
+                                    style={[styles.pageBtn, page === totalPages && { opacity: 0.3 }]}
+                                >
+                                    <Text style={{ color: theme.primary, fontWeight: 'bold' }}>NEXT</Text>
+                                    <MaterialCommunityIcons name="chevron-right" size={24} color={theme.primary} />
+                                </TouchableOpacity>
+                            </View>
+                        )
+                    }
                 />
             )}
 
@@ -378,5 +444,25 @@ const styles = StyleSheet.create({
         fontSize: 15,
         lineHeight: 22,
         fontStyle: 'italic'
-    }
+    },
+    pagination: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(0,0,0,0.05)',
+        marginTop: 10,
+    },
+    pageBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 8,
+    },
+    pageIndicator: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        letterSpacing: 1,
+    },
 });

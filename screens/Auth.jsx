@@ -23,10 +23,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import colors from "../colors/colors";
 import CustomAlert from "../components/CustomAlert";
-
-const LOCAL_IP = "192.168.1.8";
-
-const API_URL = `http://${LOCAL_IP}:4000`;
+import { API_URL } from '../constants/config';
 
 export default function Auth({ onLogin }) {
   const isDark = useSelector((state) => (state.theme ? state.theme.isDark : false)); // Safe access
@@ -189,8 +186,15 @@ export default function Auth({ onLogin }) {
         const data = await response.json();
 
         if (!response.ok) {
-          console.warn(`[Auth] ${isReset ? 'Reset' : (isLogin ? 'Login' : 'Signup')} Failed:`, data.err || data.msg);
-          throw new Error(data.err || data.msg || "Authentication failed");
+          let errorMsg = data.message || data.err || data.msg || "Authentication failed";
+
+          // If it's a validation error with a list of fields
+          if (data.errors && Array.isArray(data.errors)) {
+            errorMsg = data.errors.map(e => `${e.path}: ${e.message}`).join("\n");
+          }
+
+          console.warn(`[Auth] ${isReset ? 'Reset' : (isLogin ? 'Login' : 'Signup')} Failed:`, errorMsg);
+          throw new Error(errorMsg);
         }
 
         if (isReset) {

@@ -18,8 +18,7 @@ import { Asset } from 'expo-asset';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as XLSX from 'xlsx';
 
-const LOCAL_IP = "192.168.1.8";
-const API_URL = `http://${LOCAL_IP}:4000`;
+import { API_URL } from '../constants/config';
 
 // Helper Components Defined OUTSIDE
 const InputField = ({ label, value, onChangeText, placeholder, keyboardType = 'default', multiline = false, theme }) => (
@@ -359,11 +358,16 @@ export default function Observation({ onLogout }) {
                     body: JSON.stringify(payload),
                 });
 
+                const result = await response.json();
+
                 if (response.ok) {
                     successCount++;
                 } else {
-                    const data = await response.json();
-                    console.error("Upload Error:", data);
+                    let errorMsg = result.message || result.err || "Upload failed";
+                    if (result.errors && Array.isArray(result.errors)) {
+                        errorMsg = result.errors.map(e => `${e.path}: ${e.message}`).join("\n");
+                    }
+                    console.error("Upload Error:", errorMsg);
                     failedCount++;
                 }
             } catch (error) {

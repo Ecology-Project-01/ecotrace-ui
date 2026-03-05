@@ -8,7 +8,7 @@ import colors from '../colors/colors';
 import { LinearGradient } from 'expo-linear-gradient';
 import CustomAlert from '../components/CustomAlert';
 
-const LOCAL_IP = "192.168.1.8";
+const LOCAL_IP = "192.168.1.7";
 const API_URL = `http://${LOCAL_IP}:4000`;
 
 export default function AdminRights({ navigation }) {
