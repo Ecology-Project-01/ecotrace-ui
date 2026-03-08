@@ -36,8 +36,6 @@ export default function TabNavigator({ onLogout }) {
                     backgroundColor: theme.surface,
                     borderTopColor: theme.border,
                     elevation: 5,
-                    height: 60,
-                    paddingBottom: 10,
                 },
                 tabBarLabelStyle: {
                     fontSize: 12,

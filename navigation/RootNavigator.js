@@ -14,6 +14,9 @@ import CategoryDetails from '../screens/CategoryDetails';
 import EditProfile from '../screens/EditProfile';
 import AdminRights from '../screens/AdminRights';
 import SuperAdminRights from '../screens/SuperAdminRights';
+import TrackMap from '../screens/TrackMap';
+import TripsHistory from '../screens/TripsHistory';
+import TripDetails from '../screens/TripDetails';
 import colors from '../colors/colors';
 import { setUser as setUserAction, clearUser } from '../store/slices/userSlice';
 
@@ -117,6 +120,15 @@ export default function RootNavigator() {
                         </Stack.Screen>
                         <Stack.Screen name='SuperAdminRights'>
                             {(props) => <SuperAdminRights {...props} />}
+                        </Stack.Screen>
+                        <Stack.Screen name='TrackMap'>
+                            {(props) => <TrackMap {...props} />}
+                        </Stack.Screen>
+                        <Stack.Screen name='TripsHistory'>
+                            {(props) => <TripsHistory {...props} />}
+                        </Stack.Screen>
+                        <Stack.Screen name='TripDetails'>
+                            {(props) => <TripDetails {...props} />}
                         </Stack.Screen>
 
                     </Stack.Group>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator, Modal, FlatList, TouchableWithoutFeedback, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
@@ -12,6 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 
 import colors from '../colors/colors';
 import CustomAlert from '../components/CustomAlert';
+import { addObservationToTrip } from '../store/slices/tripSlice';
 import { CATEGORIES } from '../constants/categories';
 import { ICONS, getCategoryIcon } from '../constants/icons';
 import { Asset } from 'expo-asset';
@@ -65,6 +66,7 @@ const CategorySelect = ({ category, onPress, theme }) => (
 
 
 export default function Observation({ onLogout }) {
+    const dispatch = useDispatch();
     const isDark = useSelector((state) => state?.theme?.isDark || false);
     const userState = useSelector((state) => state?.user || {});
     const { auth_email, auth_username } = userState;
@@ -298,8 +300,11 @@ export default function Observation({ onLogout }) {
             latitude: form.latitude,
             longitude: form.longitude,
             areaName: form.areaName, // Save area name
-            observedAt: new Date()
+            observedAt: new Date().toISOString()
         };
+
+        // NEW: Add to Trip State if tracking
+        dispatch(addObservationToTrip(newItem));
 
         setObservationsList(prev => [...prev, newItem]);
 

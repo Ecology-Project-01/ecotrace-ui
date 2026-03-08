@@ -26,11 +26,11 @@ export default function Home({ onLogout }) {
         <Text style={[styles.greeting, { color: theme.primary }]}>Happy Eco-Tracing!</Text>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Welcome back, {username || "Friend"}</Text>
 
-        {/* Example Action Button */}
+        {/* Tracking Action */}
         <TouchableOpacity
           style={styles.actionButtonContainer}
           activeOpacity={0.8}
-          onPress={() => navigation.navigate('Observation')}
+          onPress={() => navigation.navigate('TrackMap')}
         >
           <LinearGradient
             colors={isDark ? colors.gradientPurple : colors.gradientPrimary}
@@ -38,24 +38,42 @@ export default function Home({ onLogout }) {
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
           >
-            <Text style={styles.buttonText}>Start Tracking</Text>
+            <View style={{ alignItems: 'center' }}>
+              <Text style={styles.buttonText}>Start Trip</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: '500', marginTop: 4 }}>
+                Track path & record findings
+              </Text>
+            </View>
           </LinearGradient>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.actionButtonContainer, { marginTop: 16 }]}
-          activeOpacity={0.8}
-          onPress={() => navigation.navigate('Results')}
-        >
-          <LinearGradient
-            colors={isDark ? ['#333', '#111'] : ['#e0e0e0', '#d0d0d0']}
-            style={styles.gradientButton}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
+        <View style={styles.secondaryActions}>
+          <TouchableOpacity
+            style={[styles.smallActionButton, { backgroundColor: isDark ? '#333' : '#ebebeb' }]}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('TripsHistory')}
           >
-            <Text style={[styles.buttonText, { color: isDark ? '#fff' : '#333' }]}>View Results</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+            <LinearGradient
+              colors={isDark ? ['#444', '#222'] : ['#f0f0f0', '#e0e0e0']}
+              style={styles.smallGradient}
+            >
+              <Text style={[styles.smallButtonText, { color: theme.text }]}>My Trips</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.smallActionButton, { backgroundColor: isDark ? '#333' : '#ebebeb' }]}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('Results')}
+          >
+            <LinearGradient
+              colors={isDark ? ['#444', '#222'] : ['#f0f0f0', '#e0e0e0']}
+              style={styles.smallGradient}
+            >
+              <Text style={[styles.smallButtonText, { color: theme.text }]}>Record Logs</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
 
       </ScrollView>
 
@@ -106,5 +124,30 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     letterSpacing: 1.2,
+  },
+  secondaryActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+    gap: 15,
+  },
+  smallActionButton: {
+    flex: 1,
+    borderRadius: 16,
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  smallGradient: {
+    paddingVertical: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  smallButtonText: {
+    fontSize: 15,
+    fontWeight: 'bold',
   }
 });

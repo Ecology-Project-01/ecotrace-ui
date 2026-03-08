@@ -21,14 +21,38 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.kookie29.ecotrace",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-web-browser",
-      "expo-asset"
-    ]
+      "expo-asset",
+      [
+        "expo-location",
+        {
+          "locationAlwaysPermission": "Allow EcoTrace to use your location even when the app is in the background."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "e5308d28-3332-445e-9994-2116f9dc8b68"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/e5308d28-3332-445e-9994-2116f9dc8b68"
+    }
   }
 }

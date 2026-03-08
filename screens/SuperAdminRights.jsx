@@ -7,8 +7,7 @@ import * as SecureStore from 'expo-secure-store';
 import colors from '../colors/colors';
 import CustomAlert from '../components/CustomAlert';
 
-const LOCAL_IP = "192.168.1.7";
-const API_URL = `http://${LOCAL_IP}:4000`;
+import { API_URL } from '../constants/config';
 
 export default function SuperAdminRights({ navigation }) {
     const isDark = useSelector((state) => state.theme.isDark);
