@@ -11,6 +11,7 @@ import Auth from '../screens/Auth';
 import Observation from '../screens/Observation';
 import Results from '../screens/Results';
 import CategoryDetails from '../screens/CategoryDetails';
+import RecordDetails from '../screens/RecordDetails';
 import EditProfile from '../screens/EditProfile';
 import AdminRights from '../screens/AdminRights';
 import SuperAdminRights from '../screens/SuperAdminRights';
@@ -111,6 +112,9 @@ export default function RootNavigator() {
                         </Stack.Screen>
                         <Stack.Screen name='CategoryDetails'>
                             {(props) => <CategoryDetails {...props} />}
+                        </Stack.Screen>
+                        <Stack.Screen name='RecordDetails'>
+                            {(props) => <RecordDetails {...props} />}
                         </Stack.Screen>
                         <Stack.Screen name='EditProfile'>
                             {(props) => <EditProfile {...props} />}

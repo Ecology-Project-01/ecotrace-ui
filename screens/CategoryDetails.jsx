@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, FlatList, Modal, ScrollView, TouchableWithoutFeedback } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { ICONS, getCategoryIcon } from '../constants/icons';
+import { ICONS } from '../constants/icons';
 import colors from '../colors/colors';
 
 import { API_URL } from '../constants/config';
@@ -23,8 +23,6 @@ export default function CategoryDetails() {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalRecords, setTotalRecords] = useState(0);
-    const [selectedItem, setSelectedItem] = useState(null);
-
     useEffect(() => {
         fetchCategoryData(page);
     }, [page]);
@@ -55,7 +53,7 @@ export default function CategoryDetails() {
         const categoryColor = theme.primary; // Or map specific colors to categories
 
         return (
-            <TouchableOpacity onPress={() => setSelectedItem(item)} activeOpacity={0.8}>
+            <TouchableOpacity onPress={() => navigation.navigate('RecordDetails', { item })} activeOpacity={0.8}>
                 <View style={[
                     styles.card,
                     {
@@ -83,6 +81,14 @@ export default function CategoryDetails() {
                                 {Array.isArray(item.location_name) ? item.location_name[0] : (item.location_name || "Unknown")}
                             </Text>
                         </View>
+                        {item.taxon?.family ? (
+                            <View style={styles.footerItem}>
+                                <MaterialCommunityIcons name="family-tree" size={14} color={theme.textLight} />
+                                <Text style={[styles.footerText, { color: theme.textSecondary }]}>
+                                    {item.taxon.family}
+                                </Text>
+                            </View>
+                        ) : null}
                         <View style={styles.footerItem}>
                             <MaterialCommunityIcons name="calendar" size={14} color={theme.textLight} />
                             <Text style={[styles.footerText, { color: theme.textSecondary }]}>
@@ -150,118 +156,9 @@ export default function CategoryDetails() {
                     }
                 />
             )}
-
-            {/* Detail Modal */}
-            {selectedItem && (
-                <Modal
-                    visible={!!selectedItem}
-                    transparent={true}
-                    animationType="fade"
-                    onRequestClose={() => setSelectedItem(null)}
-                >
-                    <TouchableOpacity
-                        style={styles.modalOverlay}
-                        activeOpacity={1}
-                        onPress={() => setSelectedItem(null)}
-                    >
-                        <TouchableWithoutFeedback>
-                            <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
-                                <ScrollView showsVerticalScrollIndicator={false}>
-
-                                    {/* Header Section */}
-                                    <View style={{ alignItems: 'center', marginBottom: 20 }}>
-                                        <View style={[styles.iconContainer, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff' }]}>
-                                            <MaterialCommunityIcons name={getCategoryIcon(selectedItem.taxon?.category)} size={32} color={theme.primary} />
-                                        </View>
-                                        <Text style={[styles.modalTitle, { color: theme.text, marginTop: 12, textAlign: 'center' }]}>
-                                            {selectedItem.taxon?.common_name}
-                                        </Text>
-                                        {selectedItem.taxon?.scientific_name && (
-                                            <Text style={[styles.modalSubtitle, { color: theme.textSecondary }]}>
-                                                {selectedItem.taxon.scientific_name}
-                                            </Text>
-                                        )}
-                                        <View style={[styles.badge, { backgroundColor: theme.border, marginTop: 8 }]}>
-                                            <Text style={{ fontSize: 12, fontWeight: '600', color: theme.textSecondary }}>
-                                                {selectedItem.taxon?.category} • Qty: {selectedItem.count}
-                                            </Text>
-                                        </View>
-                                    </View>
-
-                                    {/* Info Grid */}
-                                    <View style={[styles.infoSection, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', padding: 15, borderRadius: 16 }]}>
-                                        <InfoRow
-                                            icon="calendar-clock"
-                                            label="Observed On"
-                                            value={new Date(selectedItem.observedDate).toLocaleString()}
-                                            theme={theme}
-                                            iconColor={colors.vividPink}
-                                        />
-                                        <InfoRow
-                                            icon="calendar-plus"
-                                            label="Record Created"
-                                            value={new Date(selectedItem.createdDate || selectedItem.createdAt).toLocaleString()}
-                                            theme={theme}
-                                            iconColor={colors.electricCyan}
-                                        />
-                                        <InfoRow
-                                            icon="account"
-                                            label="Contributor"
-                                            value={selectedItem.contributor}
-                                            theme={theme}
-                                            iconColor={colors.neonPurple}
-                                        />
-                                        <InfoRow
-                                            icon="map-marker"
-                                            label="Location"
-                                            value={Array.isArray(selectedItem.location_name) ? selectedItem.location_name.join(', ') : (selectedItem.location_name || "Unknown Area")}
-                                            theme={theme}
-                                            iconColor={colors.electricLime}
-                                        />
-                                        <InfoRow
-                                            icon="crosshairs-gps"
-                                            label="Coordinates"
-                                            value={
-                                                Array.isArray(selectedItem.location)
-                                                    ? `${selectedItem.location[0]}, ${selectedItem.location[1]}`
-                                                    : (selectedItem.location?.coordinates
-                                                        ? `${selectedItem.location.coordinates[1]?.toFixed(5)}, ${selectedItem.location.coordinates[0]?.toFixed(5)}`
-                                                        : "N/A")
-                                            }
-                                            theme={theme}
-                                            iconColor={colors.warmPeach}
-                                        />
-                                    </View>
-
-                                    {/* Notes */}
-                                    {selectedItem.notes && (
-                                        <View style={[styles.notesContainer, { backgroundColor: theme.background }]}>
-                                            <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>NOTES</Text>
-                                            <Text style={[styles.noteText, { color: theme.text }]}>{selectedItem.notes}</Text>
-                                        </View>
-                                    )}
-
-                                </ScrollView>
-                            </View>
-                        </TouchableWithoutFeedback>
-                    </TouchableOpacity>
-                </Modal>
-            )}
         </SafeAreaView>
     );
 }
-
-const InfoRow = ({ icon, label, value, theme, iconColor }) => (
-    <View style={styles.infoRow}>
-        <View style={[styles.miniIconCircle, { backgroundColor: iconColor ? `${iconColor}20` : 'rgba(0,0,0,0.05)' }]}>
-            <MaterialCommunityIcons name={icon} size={18} color={iconColor || theme.textSecondary} />
-        </View>
-        <View style={{ flex: 1 }}>
-            <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>{label}</Text>
-            <Text style={[styles.infoValue, { color: theme.text }]}>{value}</Text>
-        </View>
-    </View>
-);
 
 const styles = StyleSheet.create({
     container: {
@@ -359,91 +256,6 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center'
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'center', // Center vertically
-        alignItems: 'center', // Center horizontally
-        padding: 24, // Add padding so card doesn't touch screen edges
-    },
-    modalContent: {
-        width: '100%',
-        borderRadius: 24, // Rounded corners for card look
-        padding: 24,
-        maxHeight: '80%', // Allow card to be taller but not full screen
-        elevation: 10,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 5 },
-        shadowOpacity: 0.15,
-        shadowRadius: 10,
-    },
-    iconContainer: {
-        width: 64,
-        height: 64,
-        borderRadius: 32,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 8
-    },
-    modalTitle: {
-        fontSize: 22,
-        fontWeight: '800',
-    },
-    modalSubtitle: {
-        fontSize: 16,
-        fontStyle: 'italic',
-        marginTop: 4
-    },
-    badge: {
-        paddingHorizontal: 12,
-        paddingVertical: 4,
-        borderRadius: 12,
-    },
-    infoSection: {
-        marginTop: 10,
-        marginBottom: 20
-    },
-    infoRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 16
-    },
-    miniIconCircle: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 12
-    },
-    infoLabel: {
-        fontSize: 11,
-        fontWeight: '700',
-        marginBottom: 2,
-        textTransform: 'uppercase'
-    },
-    infoValue: {
-        fontSize: 15,
-        fontWeight: '500',
-        flexWrap: 'wrap',
-        maxWidth: 280
-    },
-    notesContainer: {
-        padding: 16,
-        borderRadius: 12,
-        marginTop: 10
-    },
-    sectionLabel: {
-        fontSize: 12,
-        fontWeight: '700',
-        marginBottom: 8,
-        letterSpacing: 1
-    },
-    noteText: {
-        fontSize: 15,
-        lineHeight: 22,
-        fontStyle: 'italic'
     },
     pagination: {
         flexDirection: 'row',

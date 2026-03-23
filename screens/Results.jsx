@@ -153,7 +153,8 @@ export default function Results() {
             }
 
             const headers = [
-                'Common Name', 'Scientific Name', 'Category', 'Count',
+                'Common Name', 'Scientific Name', 'Family', 'Order', 'IUCN Status',
+                'Category', 'Count',
                 'Latitude', 'Longitude', ...locHeaders, 'Observed Date', 'Created Date',
                 'Contributor', 'Org', 'Notes'
             ].join(',');
@@ -162,6 +163,9 @@ export default function Results() {
             const rows = allData.map(item => {
                 const commonName = `"${item.taxon?.common_name || ''}"`;
                 const scientificName = `"${item.taxon?.scientific_name || ''}"`;
+                const family = `"${item.taxon?.family || ''}"`;
+                const order = `"${item.taxon?.order || ''}"`;
+                const iucnStatus = `"${item.taxon?.iucn_status || ''}"`;
                 const category = `"${item.taxon?.category || ''}"`;
                 const count = item.count || '';
 
@@ -198,10 +202,11 @@ export default function Results() {
 
                 const contributor = `"${item.contributor || ''}"`;
                 const org = `"${item.org || ''}"`;
-                const notes = `"${(item.notes || '').replace(/"/g, '""')}"`; // Escape quotes
+                const notes = `"${(item.notes || '').replace(/"/g, '""')}"`;
 
                 return [
-                    commonName, scientificName, category, count,
+                    commonName, scientificName, family, order, iucnStatus,
+                    category, count,
                     lat, lng, ...locCols, observed, created,
                     contributor, org, notes
                 ].join(',');

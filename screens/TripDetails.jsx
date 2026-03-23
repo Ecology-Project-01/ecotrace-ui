@@ -32,12 +32,14 @@ export default function TripDetails({ route, navigation }) {
         }
 
         try {
-            const headers = ['Common Name', 'Scientific Name', 'Category', 'Qty', 'Lat', 'Lng', 'Area', 'Time', 'Notes'].join(',');
+            const headers = ['Common Name', 'Scientific Name', 'Family', 'Order', 'IUCN Status', 'Qty', 'Lat', 'Lng', 'Area', 'Time', 'Notes'].join(',');
             const rows = trip.observations.map(item => {
                 return [
                     `"${item.commonName}"`,
-                    `"${item.scientificName}"`,
-                    `"${item.category}"`,
+                    `"${item.scientificName || ''}"`,
+                    `"${item.family || ''}"`,
+                    `"${item.order || ''}"`,
+                    `"${item.iucn || ''}"`,
                     item.count,
                     item.latitude,
                     item.longitude,
@@ -108,9 +110,20 @@ export default function TripDetails({ route, navigation }) {
                                 <Text style={[styles.commonName, { color: theme.text }]}>{item.commonName}</Text>
                                 <Text style={[styles.qty, { color: theme.primary }]}>{item.count}x</Text>
                             </View>
-                            <Text style={[styles.scientificName, { color: theme.textSecondary }]}>{item.scientificName}</Text>
-                            <View style={[styles.tag, { backgroundColor: theme.border }]}>
-                                <Text style={{ color: theme.textSecondary, fontSize: 10, fontWeight: 'bold' }}>{item.category.toUpperCase()}</Text>
+                            {item.scientificName ? (
+                                <Text style={[styles.scientificName, { color: theme.textSecondary }]}>{item.scientificName}</Text>
+                            ) : null}
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                                {item.family ? (
+                                    <View style={[styles.tag, { backgroundColor: theme.border }]}>
+                                        <Text style={{ color: theme.textSecondary, fontSize: 10, fontWeight: 'bold' }}>{item.family}</Text>
+                                    </View>
+                                ) : null}
+                                {item.iucn ? (
+                                    <View style={[styles.tag, { backgroundColor: theme.border }]}>
+                                        <Text style={{ color: theme.textSecondary, fontSize: 10, fontWeight: 'bold' }}>{item.iucn}</Text>
+                                    </View>
+                                ) : null}
                             </View>
                         </View>
                     ))
