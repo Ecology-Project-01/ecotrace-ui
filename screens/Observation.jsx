@@ -58,7 +58,9 @@ export default function Observation({ onLogout }) {
     const [isExcelLoaded, setIsExcelLoaded] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [matchedEntry, setMatchedEntry] = useState(null); // the full selected row
-
+    const [showBreedingStatus, setShowBreedingStatus] = useState(false);
+    // Breeding Status
+    const [breedingStatus, setBreedingStatus] = useState(null);
     const [observationsList, setObservationsList] = useState([]);
 
     const [alertVisible, setAlertVisible] = useState(false);
@@ -244,6 +246,7 @@ export default function Observation({ onLogout }) {
             category: form.category,
             iucn: form.iucn,
             altNames: form.altNames,
+            breedingStatus: breedingStatus || undefined,
         };
 
         dispatch(addObservationToTrip(newItem));
@@ -251,6 +254,8 @@ export default function Observation({ onLogout }) {
         setSuggestions([]);
         setShowSuggestions(false);
         setMatchedEntry(null);
+        setBreedingStatus(null);
+        setShowBreedingStatus(false);
 
         // Reset only the input fields, keep GPS
         setForm(prev => ({
@@ -296,6 +301,7 @@ export default function Observation({ onLogout }) {
                 },
                 count: item.count,
                 notes: item.notes || '',
+                breeding_status: item.breedingStatus || undefined,
                 location: [item.latitude.toString(), item.longitude.toString()],
                 location_name: item.areaName ? item.areaName.split(',').map(s => s.trim()) : [],
                 observedAt: item.observedAt,
@@ -345,6 +351,26 @@ export default function Observation({ onLogout }) {
         return theme.textSecondary;
     };
 
+    // breeding status
+    const breedingStatusList = [
+        "Agitated Behavior",
+        "Nest Building",
+        "Courtship Display",
+        "Carrying Food",
+        "Feeding Young",
+        "Recently Fledged Young",
+        "Singing Bird"
+    ];
+
+    const getCode = (name) => {
+        const words = name.split(' ');
+
+        if (words.length === 1) return words[0].charAt(0).toUpperCase();
+        
+        return (words[0][0] + words[1][0]).toUpperCase();
+
+    }
+
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
 
@@ -393,7 +419,7 @@ export default function Observation({ onLogout }) {
                     {/* ── Bird Search Card ── */}
                     <View style={[styles.card, { backgroundColor: theme.surface }]}>
                         <Text style={[styles.sectionTitle, { color: theme.secondary }]}>
-                            🐦 Bird Identification
+                            Bird Identification
                         </Text>
 
                         {/* Common Name / Search */}
@@ -500,6 +526,72 @@ export default function Observation({ onLogout }) {
                                             </View>
                                         </>
                                     ) : null}
+                                </View>
+
+                                <View style={styles.breedingSection}>
+                                    <TouchableOpacity
+                                        onPress={() => setShowBreedingStatus(!showBreedingStatus)}
+                                        activeOpacity={0.7}
+                                        style={[styles.breedingToggle, { borderColor: theme.border, backgroundColor: isDark ? '#1a2235' : '#F5F5F5' }]}
+                                    >
+                                        {/* <MaterialCommunityIcons name="nest" size={18} color={theme.primary} /> */}
+                                        <Text style={[styles.breedingToggleText, { color: theme.text }]}>
+                                            {showBreedingStatus ? 'Hide breeding status' : 'Add breeding status'}
+                                        </Text>
+                                        <MaterialCommunityIcons
+                                            name={showBreedingStatus ? 'chevron-up' : 'chevron-down'}
+                                            size={20}
+                                            color={theme.textSecondary}
+                                        />
+                                    </TouchableOpacity>
+
+                                    {showBreedingStatus && (
+                                        <>
+                                            <View style={[styles.breedingOptionsRow, { marginTop: 10 }]}>
+                                                {breedingStatusList.map((status) => {
+                                                    const code = getCode(status);
+                                                    const selected = breedingStatus === status;
+                                                    return (
+                                                        <TouchableOpacity
+                                                            key={status}
+                                                            onPress={() =>
+                                                                setBreedingStatus((prev) => (prev === status ? null : status))
+                                                            }
+                                                            activeOpacity={0.7}
+                                                            style={[
+                                                                styles.breedingChip,
+                                                                {
+                                                                    borderColor: selected ? colors.vividPink : theme.border,
+                                                                    backgroundColor: selected
+                                                                        ? isDark
+                                                                            ? 'rgba(255, 64, 129, 0.2)'
+                                                                            : 'rgba(255, 64, 129, 0.12)'
+                                                                        : isDark
+                                                                          ? '#252525'
+                                                                          : '#FFF',
+                                                                },
+                                                            ]}
+                                                        >
+                                                            <Text
+                                                                style={[
+                                                                    styles.breedingChipText,
+                                                                    { color: selected ? colors.vividPink : theme.text },
+                                                                ]}
+                                                            >
+                                                                {code}
+                                                            </Text>
+                                                        </TouchableOpacity>
+                                                    );
+                                                })}
+                                            </View>
+                                            <Text style={{ color: theme.textSecondary, marginTop: 8, fontSize: 13 }}>
+                                                Selected:{' '}
+                                                <Text style={{ color: theme.text, fontWeight: '600' }}>
+                                                    {breedingStatus ?? '—'}
+                                                </Text>
+                                            </Text>
+                                        </>
+                                    )}
                                 </View>
 
                                 {/* Notes input inside the expanded section */}
@@ -642,6 +734,33 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderRadius: 10, padding: 12,
         fontSize: 14, minHeight: 80, marginTop: 8,
     },
+
+    breedingSection: { marginTop: 8, marginBottom: 4 },
+    breedingToggle: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderRadius: 10,
+        borderWidth: 1,
+    },
+    breedingToggleText: { flex: 1, fontSize: 14, fontWeight: '600' },
+    breedingOptionsRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+    },
+    breedingChip: {
+        minWidth: 52,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderRadius: 10,
+        borderWidth: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    breedingChipText: { fontSize: 16, fontWeight: '700' },
 
     // Autocomplete Dropdown
     suggestionBox: {

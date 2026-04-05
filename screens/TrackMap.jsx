@@ -10,6 +10,8 @@ import { startTrip, stopTrip, addLocation, resetTrip } from '../store/slices/tri
 import colors from '../colors/colors';
 import { ICONS } from '../constants/icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
+import { API_URL } from '../constants/config';
 
 const { width } = Dimensions.get('window');
 
@@ -96,14 +98,52 @@ export default function TrackMap() {
 
         setIsSaving(true);
         try {
+            const clientId = Date.now().toString();
+            const endTimeIso = new Date().toISOString();
+            let tripId = clientId;
+            let synced = false;
+
+            const token = await SecureStore.getItemAsync('userToken');
+            if (token) {
+                try {
+                    const res = await fetch(`${API_URL}/trips`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({
+                            name: tripName.trim(),
+                            path,
+                            distance,
+                            startTime,
+                            endTime: endTimeIso,
+                            observations,
+                            clientId,
+                        }),
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (res.ok && data.data?._id) {
+                        tripId = String(data.data._id);
+                        synced = true;
+                    } else {
+                        console.warn('[TrackMap] Trip API save failed:', data?.message || res.status);
+                    }
+                } catch (e) {
+                    console.warn('[TrackMap] Trip API error:', e);
+                }
+            }
+
             const newTrip = {
-                id: Date.now().toString(),
-                name: tripName,
-                startTime: startTime,
-                endTime: new Date().toISOString(),
-                path: path,
-                distance: distance,
-                observations: observations,
+                id: tripId,
+                clientId,
+                name: tripName.trim(),
+                startTime,
+                endTime: endTimeIso,
+                path,
+                distance,
+                observations,
+                synced,
             };
 
             const existingTripsJson = await AsyncStorage.getItem('tripsList');
@@ -113,7 +153,12 @@ export default function TrackMap() {
 
             dispatch(resetTrip());
             setShowNameModal(false);
-            Alert.alert("Success", "Trip saved to history!");
+            Alert.alert(
+                'Success',
+                synced
+                    ? 'Trip saved and shared with your organization.'
+                    : 'Trip saved on this device. Sign in and try again to sync with your team.'
+            );
             navigation.navigate('TripsHistory');
         } catch (error) {
             console.error("Save error:", error);
@@ -204,7 +249,9 @@ export default function TrackMap() {
                 <View style={styles.modalOverlay}>
                     <View style={[styles.modalBox, { backgroundColor: theme.surface }]}>
                         <Text style={[styles.modalTitle, { color: theme.text }]}>Finish Trip</Text>
-                        <Text style={[styles.modalSubtitle, { color: theme.textSecondary }]}>Give your path a name to save it locally.</Text>
+                        <Text style={[styles.modalSubtitle, { color: theme.textSecondary }]}>
+                            Name this trip. Your travelled path (GPS points), distance, and sightings are saved to the database for your organization when you are signed in.
+                        </Text>
 
                         <TextInput
                             style={[styles.input, { color: theme.text, borderBottomColor: theme.primary }]}

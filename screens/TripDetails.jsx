@@ -5,6 +5,7 @@ import MapView, { Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useSelector } from 'react-redux';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import colors from '../colors/colors';
+import { observationCsvHeaderLine, rowFromTripObservation } from '../constants/csvExport';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 
@@ -32,22 +33,10 @@ export default function TripDetails({ route, navigation }) {
         }
 
         try {
-            const headers = ['Common Name', 'Scientific Name', 'Family', 'Order', 'IUCN Status', 'Qty', 'Lat', 'Lng', 'Area', 'Time', 'Notes'].join(',');
-            const rows = trip.observations.map(item => {
-                return [
-                    `"${item.commonName}"`,
-                    `"${item.scientificName || ''}"`,
-                    `"${item.family || ''}"`,
-                    `"${item.order || ''}"`,
-                    `"${item.iucn || ''}"`,
-                    item.count,
-                    item.latitude,
-                    item.longitude,
-                    `"${item.areaName}"`,
-                    `"${new Date(item.observedAt).toLocaleString()}"`,
-                    `"${(item.notes || '').replace(/"/g, '""')}"`
-                ].join(',');
-            });
+            const headers = observationCsvHeaderLine();
+            const rows = trip.observations.map((item) =>
+                rowFromTripObservation(trip, item, { contributor: trip.contributor, org: trip.org })
+            );
 
             const csvContent = `${headers}\n${rows.join('\n')}`;
             const safeName = trip.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
@@ -69,8 +58,9 @@ export default function TripDetails({ route, navigation }) {
                 </TouchableOpacity>
                 <View style={{ flex: 1, marginLeft: 15 }}>
                     <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>{trip.name}</Text>
-                    <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+                    <Text style={[styles.subtitle, { color: theme.textSecondary }]} numberOfLines={2}>
                         {new Date(trip.startTime).toLocaleDateString()} • {(trip.distance / 1000).toFixed(2)} km
+                        {trip.contributor ? ` • ${trip.contributor}` : ''}
                     </Text>
                 </View>
                 <TouchableOpacity onPress={exportTripCSV} style={[styles.exportBtn, { backgroundColor: theme.primary }]}>
