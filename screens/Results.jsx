@@ -13,6 +13,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import CustomAlert from '../components/CustomAlert';
 import { API_URL } from '../constants/config';
+import { observationCsvHeaderLine, rowFromApiObservation } from '../constants/csvExport';
 
 // Defined outside to prevent re-creation and potential context issues
 const CategoryCard = ({ category, items = [], theme, navigation }) => (
@@ -136,81 +137,8 @@ export default function Results() {
         }
 
         try {
-            // Find max number of location segments across all records
-            let maxLocFields = 0;
-            allData.forEach(item => {
-                const count = Array.isArray(item.location_name) ? item.location_name.length : (item.location_name ? 1 : 0);
-                if (count > maxLocFields) maxLocFields = count;
-            });
-
-            // If no location names at all, at least have 1 col
-            if (maxLocFields === 0) maxLocFields = 1;
-
-            // Generate dynamic headers for location
-            const locHeaders = [];
-            for (let i = 1; i <= maxLocFields; i++) {
-                locHeaders.push(`loc ${i}`);
-            }
-
-            const headers = [
-                'Common Name', 'Scientific Name', 'Family', 'Order', 'IUCN Status',
-                'Category', 'Count',
-                'Latitude', 'Longitude', ...locHeaders, 'Observed Date', 'Created Date',
-                'Contributor', 'Org', 'Notes'
-            ].join(',');
-
-            // Map data to CSV rows
-            const rows = allData.map(item => {
-                const commonName = `"${item.taxon?.common_name || ''}"`;
-                const scientificName = `"${item.taxon?.scientific_name || ''}"`;
-                const family = `"${item.taxon?.family || ''}"`;
-                const order = `"${item.taxon?.order || ''}"`;
-                const iucnStatus = `"${item.taxon?.iucn_status || ''}"`;
-                const category = `"${item.taxon?.category || ''}"`;
-                const count = item.count || '';
-
-                // Location coords
-                const lat = Array.isArray(item.location) ? item.location[0] : (item.location?.coordinates ? item.location.coordinates[1] : '');
-                const lng = Array.isArray(item.location) ? item.location[1] : (item.location?.coordinates ? item.location.coordinates[0] : '');
-
-                // Dynamic Location Segments
-                const locArray = Array.isArray(item.location_name) ? item.location_name : (item.location_name ? [item.location_name] : []);
-                const locCols = [];
-                for (let i = 0; i < maxLocFields; i++) {
-                    locCols.push(`"${locArray[i] || ''}"`);
-                }
-
-                // Simplified 24-hour format helper
-                const simpleFormat = (dateInput) => {
-                    if (!dateInput) return '';
-                    const d = new Date(dateInput);
-                    if (isNaN(d.getTime())) return '';
-
-                    const pad = (num) => String(num).padStart(2, '0');
-                    const y = d.getFullYear();
-                    const m = pad(d.getMonth() + 1);
-                    const day = pad(d.getDate());
-                    const h = pad(d.getHours());
-                    const min = pad(d.getMinutes());
-                    const s = pad(d.getSeconds());
-
-                    return `${y}-${m}-${day} ${h}:${min}:${s}`;
-                };
-
-                const observed = `"${simpleFormat(item.observedDate || item.observedAt)}"`;
-                const created = `"${simpleFormat(item.createdDate || item.createdAt)}"`;
-
-                const contributor = `"${item.contributor || ''}"`;
-                const org = `"${item.org || ''}"`;
-                const notes = `"${(item.notes || '').replace(/"/g, '""')}"`;
-
-                return [
-                    commonName, scientificName, family, order, iucnStatus,
-                    category, count,
-                    lat, lng, ...locCols, observed, created,
-                    contributor, org, notes
-                ].join(',');
-            });
+            const headers = observationCsvHeaderLine();
+            const rows = allData.map((item) => rowFromApiObservation(item));
 
             const csvContent = `${headers}\n${rows.join('\n')}`;
             const fileUri = FileSystem.documentDirectory + 'EcoTrace_Observations.csv';
