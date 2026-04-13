@@ -83,6 +83,7 @@ export default function EditProfile({ navigation }) {
 
             {/* Header with Back Button */}
             <View style={styles.header}>
+                {/* Back Button */}
                 <TouchableOpacity
                     style={[styles.backButton, { backgroundColor: theme.surface }]}
                     onPress={() => navigation.goBack()}
@@ -90,8 +91,17 @@ export default function EditProfile({ navigation }) {
                 >
                     <Ionicons name="arrow-back" size={24} color={theme.text} />
                 </TouchableOpacity>
+                {/* Title */}
                 <Text style={[styles.headerTitle, { color: theme.text }]}>Edit Profile</Text>
-                <View style={{ width: 44 }} />
+                 {/* Home Button */}
+                <TouchableOpacity
+                    style={[styles.backButton, { backgroundColor: theme.surface }]}
+                    onPress={() => navigation.navigate('Main', { screen: 'Home' })}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons name="home" size={24} color="#ff4d8d" />
+                </TouchableOpacity>
+                
             </View>
 
             <KeyboardAvoidingView
@@ -199,7 +209,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 20,
+        paddingHorizontal: 20,   // reduce right spacing 
         paddingVertical: 16,
     },
     backButton: {
@@ -215,6 +225,7 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 2,
     },
+
     headerTitle: {
         fontSize: 18,
         fontWeight: '700',

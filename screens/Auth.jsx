@@ -19,13 +19,14 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import * as Device from 'expo-device';
 import { Ionicons } from '@expo/vector-icons';
+import { Video } from 'expo-av';
 
 
 import colors from "../colors/colors";
 import CustomAlert from "../components/CustomAlert";
 import { API_URL } from '../constants/config';
 
-export default function Auth({ onLogin }) {
+export default function Auth({ onLogin, navigation }) {
   const isDark = useSelector((state) => (state.theme ? state.theme.isDark : false)); // Safe access
   // Fallback if provider not ready, though RootNavigator should wrap it.
   // Actually Auth is in RootNavigator under Provider.
@@ -38,6 +39,7 @@ export default function Auth({ onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPwdShown, setIsPwdShown] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [isBiometricSupported, setIsBiometricSupported] = useState(false);
@@ -403,13 +405,29 @@ export default function Auth({ onLogin }) {
                   </Text>
                 </Text>
               </TouchableOpacity>
-
+              <TouchableOpacity onPress={() => navigation.navigate('UserGuide', {from:'Auth'})}>
+                <Text style={{ 
+                  color: '#007AFF',
+                  marginTop: 10,
+                  textAlign: 'center'
+                }}>
+                  ▶ User Guide
+                </Text>
+              </TouchableOpacity>
             </View>
 
             {/* <Text style={{ textAlign: 'center', marginTop: 20, color: theme.textSecondary, fontSize: 10 }}>
               Debug API: {API_URL}
             </Text> */}
-
+          {showVideo && (
+              <Video
+                source={require('../assets/videos/login.mp4')}
+                style={{ width: '100%', height: 200, marginTop: 20 }}
+                useNativeControls
+                resizeMode="contain"
+                shouldPlay
+              />
+            )}
           </ScrollView>
         </LinearGradient>
       </KeyboardAvoidingView>

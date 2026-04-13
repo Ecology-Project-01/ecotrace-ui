@@ -13,6 +13,10 @@ import Results from '../screens/Results';
 import CategoryDetails from '../screens/CategoryDetails';
 import RecordDetails from '../screens/RecordDetails';
 import EditProfile from '../screens/EditProfile';
+import PrivacyScreen from "../screens/PrivacyScreen";
+import HelpScreen from "../screens/HelpScreen";
+import AboutScreen from '../screens/AboutScreen';
+import TutorialVideo from '../screens/TutorialVideo';
 import AdminRights from '../screens/AdminRights';
 import SuperAdminRights from '../screens/SuperAdminRights';
 import TrackMap from '../screens/TrackMap';
@@ -134,9 +138,25 @@ export default function RootNavigator() {
                         <Stack.Screen name='TripDetails'>
                             {(props) => <TripDetails {...props} />}
                         </Stack.Screen>
-
+                        <Stack.Screen 
+                            name='Help'>
+                            {(props) => <HelpScreen {...props} />}
+                        </Stack.Screen>
+                        <Stack.Screen name='About'>
+                            {(props) => <AboutScreen {...props} />}
+                        </Stack.Screen>
+                        <Stack.Screen name='Privacy'>
+                            {(props) => <PrivacyScreen {...props} />}
+                        </Stack.Screen>
                     </Stack.Group>
+                    
                 )}
+                <Stack.Screen 
+                    name='UserGuide' 
+                    options={{ headerShown: false }}>
+                    {(props) => <TutorialVideo {...props} />}
+                </Stack.Screen>
+
             </Stack.Navigator>
         </NavigationContainer>
     );
