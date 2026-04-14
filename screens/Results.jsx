@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, TouchableOpacity, ScrollView, FlatList, Activit
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import colors from '../colors/colors';
 import { CATEGORIES } from '../constants/categories';
 import { ICONS, getCategoryIcon } from '../constants/icons';
@@ -161,14 +161,28 @@ export default function Results() {
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme?.background || '#f0f2f5' }]}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerLeft}>
-                    <MaterialCommunityIcons name={ICONS.BACK} size={24} color={theme?.text || '#000'} />
-                </TouchableOpacity>
-                <View style={styles.headerCenter}>
-                    <Text style={[styles.headerTitle, { color: theme?.text || '#000' }]}>Observations</Text>
-                </View>
-                <View style={styles.headerRight} />
-            </View>
+
+    <TouchableOpacity
+        style={[styles.backButton, { backgroundColor: theme.surface }]}
+        onPress={() => navigation.goBack()}
+        activeOpacity={0.7}
+    >
+        <Ionicons name="arrow-back" size={24} color={theme.text} />
+    </TouchableOpacity>
+
+    <Text style={[styles.headerTitle, { color: theme.text }]}>
+        Observations
+    </Text>
+
+    <TouchableOpacity
+        style={[styles.backButton, { backgroundColor: theme.surface }]}
+        onPress={() => navigation.navigate('Main', { screen: 'Home' })}
+        activeOpacity={0.7}
+    >
+        <Ionicons name="home" size={24} color="#ff4d8d" />
+    </TouchableOpacity>
+
+</View>
 
             {loading ? (
                 <View style={styles.center}>
@@ -234,28 +248,32 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        marginBottom: 8,
-    },
-    headerLeft: {
-        width: 40,
-        alignItems: 'flex-start',
-    },
-    headerCenter: {
-        flex: 1,
-        alignItems: 'center',
-    },
-    headerRight: {
-        width: 40,
-        alignItems: 'flex-end',
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-    },
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    marginBottom: 8,
+},
+
+backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+},
+
+headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+},
     content: {
         padding: 16,
     },

@@ -12,6 +12,7 @@ import * as Sharing from 'expo-sharing';
 import colors from '../colors/colors';
 import { API_URL } from '../constants/config';
 import { observationCsvHeaderLine, rowFromTripObservation } from '../constants/csvExport';
+import { Ionicons } from '@expo/vector-icons';
 
 function normalizeTrip(t) {
     const id = t._id != null ? String(t._id) : t.id;
@@ -264,13 +265,29 @@ export default function TripsHistory() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color={theme.text} />
-                </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: theme.text }]}>My Trips</Text>
-                <View style={{ width: 40 }} />
-            </View>
+           <View style={styles.header}>
+
+    <TouchableOpacity
+        style={[styles.backButton, { backgroundColor: theme.surface }]}
+        onPress={() => navigation.goBack()}
+        activeOpacity={0.7}
+    >
+        <Ionicons name="arrow-back" size={26} color={theme.text} />
+    </TouchableOpacity>
+
+    <Text style={[styles.headerTitle, { color: theme.text }]}>
+        My Trips
+    </Text>
+
+    <TouchableOpacity
+        style={[styles.backButton, { backgroundColor: theme.surface }]}
+        onPress={() => navigation.navigate('Main', { screen: 'Home' })}
+        activeOpacity={0.7}
+    >
+        <Ionicons name="home" size={24} color="#ff4d8d" />
+    </TouchableOpacity>
+
+</View>
 
             {loading ? (
                 <View style={styles.center}>
@@ -307,8 +324,24 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         padding: 20,
     },
-    headerTitle: { fontSize: 24, fontWeight: 'bold' },
-    backBtn: { padding: 5 },
+    headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+},
+
+backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+},
     list: { padding: 20, paddingBottom: 40 },
     tripCard: {
         borderRadius: 16,

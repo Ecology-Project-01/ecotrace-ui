@@ -12,6 +12,7 @@ import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 
 import colors from '../colors/colors';
 import CustomAlert from '../components/CustomAlert';
@@ -376,34 +377,79 @@ export default function Observation({ onLogout }) {
 
             {/* ── Header ── */}
             <View style={[styles.header, { borderBottomColor: theme.border }]}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerLeft}>
-                    <MaterialCommunityIcons name={ICONS.BACK} size={24} color={theme.text} />
-                </TouchableOpacity>
-                <View style={styles.headerCenter}>
-                    <Text style={[styles.title, { color: theme.primary }]}>New Observation</Text>
-                    <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-                        {auth_username || auth_email || 'Guest'}
-                    </Text>
-                </View>
-                <View style={styles.headerRight}>
-                    {fetchingLocation ? (
-                        <ActivityIndicator size="small" color={theme.primary} />
-                    ) : (
-                        <TouchableOpacity onPress={() => showAlert(
-                            'Location',
-                            form.latitude
-                                ? `GPS Active\nArea: ${form.areaName}\nLat: ${parseFloat(form.latitude).toFixed(4)}\nLng: ${parseFloat(form.longitude).toFixed(4)}`
-                                : 'No Location Found'
-                        )}>
-                            <MaterialCommunityIcons
-                                name={form.latitude && form.longitude ? ICONS.LOCATION : ICONS.LOCATION_OUTLINE}
-                                size={24}
-                                color={form.latitude && form.longitude ? '#4CAF50' : colors.error}
-                            />
-                        </TouchableOpacity>
-                    )}
-                </View>
-            </View>
+
+    <TouchableOpacity
+        onPress={() => navigation.goBack()}
+        style={[styles.backButton, { backgroundColor: theme.surface }]}
+        activeOpacity={0.7}
+    >
+        <Ionicons
+            name="arrow-back"
+            size={24}
+            color={theme.text}
+        />
+    </TouchableOpacity>
+
+    <View style={styles.headerCenter}>
+        <Text style={[styles.title, { color: theme.primary }]}>
+            New Observation
+        </Text>
+        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+            {auth_username || auth_email || 'Guest'}
+        </Text>
+    </View>
+
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+
+        {fetchingLocation ? (
+            <ActivityIndicator
+                size="small"
+                color={theme.primary}
+                style={{ marginRight: 10 }}
+            />
+        ) : (
+            <TouchableOpacity
+                onPress={() =>
+                    showAlert(
+                        'Location',
+                        form.latitude
+                            ? `GPS Active\nArea: ${form.areaName}\nLat: ${parseFloat(form.latitude).toFixed(4)}\nLng: ${parseFloat(form.longitude).toFixed(4)}`
+                            : 'No Location Found'
+                    )
+                }
+                style={{ marginRight: 10 }}
+            >
+                <MaterialCommunityIcons
+                    name={
+                        form.latitude && form.longitude
+                            ? ICONS.LOCATION
+                            : ICONS.LOCATION_OUTLINE
+                    }
+                    size={30}
+                    color={
+                        form.latitude && form.longitude
+                            ? '#4CAF50'
+                            : colors.error
+                    }
+                />
+            </TouchableOpacity>
+        )}
+
+        <TouchableOpacity
+            onPress={() => navigation.navigate('Main', { screen: 'Home' })}
+            style={[styles.backButton, { backgroundColor: theme.surface }]}
+            activeOpacity={0.7}
+        >
+            <Ionicons                
+                name="home"
+                size={24}
+                color="#ff4d8d"
+            />
+        </TouchableOpacity>
+
+    </View>
+
+</View>
 
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
                 <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -697,15 +743,46 @@ const styles = StyleSheet.create({
 
     // Header
     header: {
-        flexDirection: 'row', alignItems: 'center',
-        paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     },
-    headerLeft: { width: 40, alignItems: 'flex-start' },
-    headerCenter: { flex: 1, alignItems: 'center' },
-    headerRight: { width: 40, alignItems: 'flex-end' },
-    title: { fontSize: 20, fontWeight: 'bold', textAlign: 'center' },
-    subtitle: { fontSize: 12, marginTop: 2, textAlign: 'center' },
+    headerLeft: { alignItems: 'flex-start' },
 
+    headerCenter: { flex: 1, alignItems: 'center' },
+
+    headerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+
+    backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+},
+
+    title: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+
+    subtitle: {
+        fontSize: 12,
+        marginTop: 2,
+        textAlign: 'center',
+    },
     // GPS Pill
     locationPill: {
         flexDirection: 'row', alignItems: 'center',

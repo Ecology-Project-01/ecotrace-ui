@@ -102,7 +102,7 @@ export default function Settings({ navigation, onLogout }) {
                             onPress={() => navigation.navigate('EditProfile')}
                         />
                         <SettingItem title="Notifications" theme={theme} />
-                        <SettingItem title="Privacy & Security" theme={theme} />
+                        <SettingItem title="Privacy & Security" theme={theme} onPress={() => navigation.navigate('Privacy')} />
                     </View>
                 </View>
 
@@ -110,8 +110,8 @@ export default function Settings({ navigation, onLogout }) {
                 <View style={styles.section}>
                     <Text style={[styles.sectionHeader, { color: theme.primary }]}>Support</Text>
                     <View style={styles.cardContainer}>
-                        <SettingItem title="Help & FAQ" theme={theme} />
-                        <SettingItem title="About App" subtitle="Version 1.0.0" theme={theme} />
+                        <SettingItem title="Help & FAQ" theme={theme} onPress={() => navigation.navigate('Help')} />
+                        <SettingItem title="About App" subtitle="Version 1.0.0" theme={theme} onPress={() => navigation.navigate('About')} />
                     </View>
                 </View>
 
