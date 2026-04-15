@@ -151,7 +151,7 @@ export default function TripsHistory() {
             try {
                 const stored = await AsyncStorage.getItem('tripsList');
                 if (stored) setTrips(JSON.parse(stored));
-            } catch (_) {}
+            } catch (_) { }
         } finally {
             setLoading(false);
         }

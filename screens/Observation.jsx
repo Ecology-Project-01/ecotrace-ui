@@ -367,7 +367,7 @@ export default function Observation({ onLogout }) {
         const words = name.split(' ');
 
         if (words.length === 1) return words[0].charAt(0).toUpperCase();
-        
+
         return (words[0][0] + words[1][0]).toUpperCase();
 
     }
@@ -613,8 +613,8 @@ export default function Observation({ onLogout }) {
                                                                             ? 'rgba(255, 64, 129, 0.2)'
                                                                             : 'rgba(255, 64, 129, 0.12)'
                                                                         : isDark
-                                                                          ? '#252525'
-                                                                          : '#FFF',
+                                                                            ? '#252525'
+                                                                            : '#FFF',
                                                                 },
                                                             ]}
                                                         >
