@@ -207,10 +207,18 @@ export default function Observation({ onLogout }) {
     }, []);
 
     // 5. Persist pending list
+    // useEffect(() => {
+    //     AsyncStorage.getItem('observationsList').then(stored => {
+    //         if (stored) setObservationsList(JSON.parse(stored));
+    //     }).catch(e => console.error('Failed to load list', e));
+    // }, []);
+
     useEffect(() => {
-        AsyncStorage.getItem('observationsList').then(stored => {
-            if (stored) setObservationsList(JSON.parse(stored));
-        }).catch(e => console.error('Failed to load list', e));
+        const clearStorage = async () => {
+            await AsyncStorage.removeItem('observationList');
+        };
+
+        clearStorage();
     }, []);
 
     useEffect(() => {
@@ -303,7 +311,9 @@ export default function Observation({ onLogout }) {
                 count: item.count,
                 notes: item.notes || '',
                 breeding_status: item.breedingStatus || undefined,
-                location: [item.latitude.toString(), item.longitude.toString()],
+                //location: [item.latitude.toString(), item.longitude.toString()],
+                
+                location: [Number(item.longitude), Number(item.latitude)],
                 location_name: item.areaName ? item.areaName.split(',').map(s => s.trim()) : [],
                 observedAt: item.observedAt,
             };
@@ -367,7 +377,7 @@ export default function Observation({ onLogout }) {
         const words = name.split(' ');
 
         if (words.length === 1) return words[0].charAt(0).toUpperCase();
-        
+
         return (words[0][0] + words[1][0]).toUpperCase();
 
     }
@@ -613,8 +623,8 @@ export default function Observation({ onLogout }) {
                                                                             ? 'rgba(255, 64, 129, 0.2)'
                                                                             : 'rgba(255, 64, 129, 0.12)'
                                                                         : isDark
-                                                                          ? '#252525'
-                                                                          : '#FFF',
+                                                                            ? '#252525'
+                                                                            : '#FFF',
                                                                 },
                                                             ]}
                                                         >

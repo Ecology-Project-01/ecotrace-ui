@@ -1,3 +1,3 @@
 // const LOCAL_IP = "192.168.1.5";
 // export const API_URL = `https://alternatives-fate-unknown-seem.trycloudflare.com`;
-export const API_URL = `http://192.168.0.102:5000`;
+export const API_URL = `http://192.168.0.101:5000`;

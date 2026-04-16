@@ -22,6 +22,7 @@ import SuperAdminRights from '../screens/SuperAdminRights';
 import TrackMap from '../screens/TrackMap';
 import TripsHistory from '../screens/TripsHistory';
 import TripDetails from '../screens/TripDetails';
+// import Report from '../screens/Report'; 
 import colors from '../colors/colors';
 import { setUser as setUserAction, clearUser } from '../store/slices/userSlice';
 
@@ -122,6 +123,10 @@ export default function RootNavigator() {
                         </Stack.Screen>
                         <Stack.Screen name='EditProfile'>
                             {(props) => <EditProfile {...props} />}
+                        </Stack.Screen>
+                        {/* ADDED REPORT SCREEN */}
+                        <Stack.Screen name='Report'>
+                            {(props) => <Report {...props} />}
                         </Stack.Screen>
                         <Stack.Screen name='AdminRights'>
                             {(props) => <AdminRights {...props} />}

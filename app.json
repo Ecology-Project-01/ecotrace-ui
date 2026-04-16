@@ -42,7 +42,8 @@
           "locationAlwaysPermission": "Allow EcoTrace to use your location even when the app is in the background."
         }
       ],
-      "expo-video"
+      "expo-video",
+      "expo-audio"
     ],
     "extra": {
       "eas": {
