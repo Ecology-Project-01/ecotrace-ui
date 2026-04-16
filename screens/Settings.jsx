@@ -1,5 +1,13 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Switch, Platform, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Switch
+} from 'react-native';
 import CustomAlert from '../components/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -25,9 +33,24 @@ const SettingItem = ({ title, subtitle, onPress, showArrow = true, theme, rightE
 );
 
 export default function Settings({ navigation, onLogout }) {
+
     const isDark = useSelector((state) => state.theme.isDark);
     const { auth_username, auth_email, auth_role, auth_org } = useSelector((state) => state.user);
     const dispatch = useDispatch();
+
+    //Add avatars
+     const avatars = [
+    require('../assets/avatars/icons8-fish-48.png'),
+    require('../assets/avatars/icons8-fly-94.png'),
+    require('../assets/avatars/icons8-fox-94.png'),
+    require('../assets/avatars/icons8-frog-48.png'),
+    require('../assets/avatars/icons8-mushroom-94.png'),
+    require('../assets/avatars/icons8-palm-tree-94.png'),
+    require('../assets/avatars/icons8-peace-pigeon-94.png'),
+  ];
+  // ✅ THEN use it
+   const [selectedAvatar, setSelectedAvatar] = useState(avatars[0]);
+   const [showPicker, setShowPicker] = useState(false);
 
     // Custom Alert State
     const [alertVisible, setAlertVisible] = useState(false);
@@ -63,17 +86,49 @@ export default function Settings({ navigation, onLogout }) {
 
                 {/* Header / Profile Section - Minimalist & Colorful */}
                 <View style={[styles.headerSection]}>
-                    <LinearGradient
-                        colors={isDark ? [colors.purple, colors.purpleLight] : colors.gradientPrimary}
-                        style={styles.avatarContainer}
-                    >
-                        <Text style={styles.avatarText}>{auth_username?.charAt(0).toUpperCase() || "U"}</Text>
-                    </LinearGradient>
-                    <View style={styles.headerTextContainer}>
-                        <Text style={[styles.userName, { color: theme.text }]}>{auth_username || "User"}</Text>
-                        <Text style={[styles.userEmail, { color: theme.textSecondary }]}>{auth_email || null}</Text>
-                    </View>
-                </View>
+
+                    {/* Avatar */}
+                   {/* Avatar */}
+                 <TouchableOpacity onPress={() => setShowPicker(!showPicker)}>
+                 <LinearGradient
+                 colors={isDark ? [colors.purple, colors.purpleLight] : colors.gradientPrimary}
+                 style={styles.avatarContainer}
+                 >
+                 <Image
+                 source={selectedAvatar || avatars[0]}
+                 style={styles.avatarImage} 
+                 />
+                 </LinearGradient>
+                 </TouchableOpacity>
+
+                   {/* Name + Email */}
+                 <View style={styles.headerTextContainer}>
+                  <Text style={[styles.userName, { color: theme.text }]}>
+              {auth_username || "User"}
+                  </Text>
+
+                 <Text style={[styles.userEmail, { color: theme.textSecondary }]}>
+                  {auth_email || ""}
+                  </Text>
+                  </View>
+                   </View>
+
+                     {/* Avatar Picker */}
+        {showPicker && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.popup}>
+              {avatars.map((avatar, index) => (
+                <TouchableOpacity key={index} onPress={() => {
+                  setSelectedAvatar(avatar);
+                  setShowPicker(false);
+                }}>
+                  <Image source={avatar} style={styles.popupImage} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        )}
+
 
                 {/* Appearance Section */}
                 <View style={styles.section}>
@@ -174,23 +229,23 @@ const styles = StyleSheet.create({
         fontSize: 28,
         fontWeight: 'bold',
     },
-    headerSection: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 32,
-    },
-    avatarContainer: {
-        width: 64,
-        height: 64,
-        borderRadius: 32,
-        alignItems: 'center',
-        justifyContent: 'center',
-        shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 5,
-    },
+     headerSection: {
+    flexDirection: 'row', // ✅ FIXED
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+   avatarContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+   avatarImage: {
+    width: 50,
+    height: 50,
+  },
+
     avatarText: {
         fontSize: 28,
         color: '#FFF',
@@ -270,4 +325,16 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '700',
     },
+
+   // Add style avatar
+    popup: {
+    flexDirection: 'row',
+    marginTop: 10,
+  },
+
+  popupImage: {
+    width: 40,
+    height: 40,
+    margin: 5,
+  },
 });

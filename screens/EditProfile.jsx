@@ -7,6 +7,7 @@ import colors from '../colors/colors';
 import { setUser } from '../store/slices/userSlice';
 import * as SecureStore from 'expo-secure-store';
 import CustomAlert from '../components/CustomAlert';
+import { Image } from 'react-native';
 
 import { API_URL } from '../constants/config';
 
@@ -16,7 +17,9 @@ export default function EditProfile({ navigation }) {
 
     const [name, setName] = useState(auth_username || '');
     const [email, setEmail] = useState(auth_email || '');
-
+     // ADD HERE
+     const [selectedAvatar, setSelectedAvatar] = useState(null);
+     
     useEffect(() => {
         setName(auth_username || '');
         setEmail(auth_email || '');
@@ -116,11 +119,21 @@ export default function EditProfile({ navigation }) {
                         {/* Avatar & Basic Info */}
                         <View style={styles.cardHeader}>
                             <View style={[styles.avatarContainer, { borderColor: theme.background }]}>
-                                <View style={[styles.avatarPlaceholder, { backgroundColor: isDark ? colors.gray800 : colors.gray100 }]}>
-                                    <Text style={[styles.avatarText, { color: theme.primary }]}>
-                                        {name ? name.charAt(0).toUpperCase() : 'U'}
-                                    </Text>
-                                </View>
+                                {/* ✅ UPDATED AVATAR SECTION */}
+                               <View style={[styles.avatarPlaceholder, { backgroundColor: isDark ? colors.gray800 : colors.gray100 }]}>
+
+                                  {selectedAvatar ? (
+                                  <Image
+                                 source={{ uri: selectedAvatar }}
+                                  style={{ width: 100, height: 100, borderRadius: 50 }}
+                                 />
+                                    ) : (
+                                 <Text style={[styles.avatarText, { color: theme.primary }]}>
+                                  {name ? name.charAt(0).toUpperCase() : 'U'}
+                                     </Text>
+                                      )}
+
+                                    </View>
                                 <TouchableOpacity style={[styles.cameraButton, { backgroundColor: theme.primary, borderColor: theme.surface }]}>
                                     <Ionicons name="camera" size={14} color="#FFF" />
                                 </TouchableOpacity>
@@ -137,6 +150,8 @@ export default function EditProfile({ navigation }) {
                                 <Text style={[styles.label, { color: theme.textSecondary }]}>Full Name</Text>
                                 <View style={[styles.inputWrapper, { backgroundColor: theme.background, borderColor: theme.border }]}>
                                     <Ionicons name="person-outline" size={18} color={theme.textLight} style={styles.inputIcon} />
+
+                                    {/* //update username */}
                                     <TextInput
                                         style={[styles.input, { color: theme.text }]}
                                         value={name}
@@ -145,7 +160,7 @@ export default function EditProfile({ navigation }) {
                                         placeholderTextColor={theme.textLight}
                                     />
                                 </View>
-                                {isChanged && (
+                              {/* //updateUsername  */}
                                     <TouchableOpacity
                                         onPress={updateUsername}
                                         style={styles.updateTextButton}
@@ -155,7 +170,7 @@ export default function EditProfile({ navigation }) {
                                             {isUpdating ? "Updating..." : "Update Username"}
                                         </Text>
                                     </TouchableOpacity>
-                                )}
+                            
                             </View>
 
                             <View style={styles.inputGroup}>
@@ -165,6 +180,8 @@ export default function EditProfile({ navigation }) {
                                     <Text style={[styles.input, { color: theme.text }]}>
                                         {email || 'null'}
                                     </Text>
+                                     
+                                     
                                 </View>
                             </View>
                         </View>
@@ -284,16 +301,16 @@ const styles = StyleSheet.create({
         marginBottom: 4,
         textAlign: 'center',
     },
+
+    //update textbutton
     updateTextButton: {
-        paddingVertical: 8,
-        paddingHorizontal: 4,
-        alignSelf: 'flex-start',
+    marginTop: 6,
+    alignSelf: "flex-start",   // LEFT aligned   
     },
-    updateText: {
-        fontSize: 13,
-        fontWeight: '700',
-        textDecorationLine: 'underline',
-        left: 140,
+    updateText: { //change the updatetext
+    fontSize: 13,
+    fontWeight: "700",
+    textDecorationLine: "underline",
     },
     userEmail: {
         fontSize: 14,
