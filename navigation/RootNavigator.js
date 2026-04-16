@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { useState, useEffect, useCallback } from 'react';
+import { View, ActivityIndicator, Alert } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as SecureStore from 'expo-secure-store';
@@ -34,9 +34,45 @@ export default function RootNavigator() {
     const [isLoading, setIsLoading] = useState(true);
     const dispatch = useDispatch();
 
+    // Handle Logout Implementation
+    const handleLogout = useCallback(async (showAlert = false) => {
+        try {
+            setUser(null);
+            dispatch(clearUser());
+            await SecureStore.deleteItemAsync('userToken');
+            await SecureStore.deleteItemAsync('userInfo');
+            if (showAlert) {
+                Alert.alert("Session Expired", "Your session has expired. Please login again.");
+            }
+        } catch (error) {
+            console.error("[Auth] Error clearing login info:", error);
+        }
+    }, [dispatch]);
+
     useEffect(() => {
         checkLoginStatus();
-    }, []);
+
+        // Setup global fetch interceptor to handle 401s automatically
+        const originalFetch = global.fetch;
+        global.fetch = async (...args) => {
+            const response = await originalFetch(...args);
+            if (response.status === 401) {
+                const url = args[0] || "";
+                // Don't trigger on login/signup routes
+                if (typeof url === 'string' && !url.includes('/auth/login') && !url.includes('/auth/signup')) {
+                    const token = await SecureStore.getItemAsync('userToken');
+                    if (token) {
+                        handleLogout(true);
+                    }
+                }
+            }
+            return response;
+        };
+
+        return () => {
+            global.fetch = originalFetch;
+        };
+    }, [handleLogout]);
 
     // Check if user is already logged in (Persistent Session)
     const checkLoginStatus = async () => {
@@ -55,7 +91,7 @@ export default function RootNavigator() {
                     dispatch(setUserAction(userData));
                 } else {
                     // Token expired
-                    await handleLogout();
+                    await handleLogout(true);
                 }
             }
         } catch (error) {
@@ -74,18 +110,6 @@ export default function RootNavigator() {
             await SecureStore.setItemAsync('userInfo', JSON.stringify(userData));
         } catch (error) {
             console.error("[Auth] Error saving login info:", error);
-        }
-    };
-
-    // Handle Logout Implementation
-    const handleLogout = async () => {
-        try {
-            setUser(null);
-            dispatch(clearUser());
-            await SecureStore.deleteItemAsync('userToken');
-            await SecureStore.deleteItemAsync('userInfo');
-        } catch (error) {
-            console.error("[Auth] Error clearing login info:", error);
         }
     };
 
