@@ -13,10 +13,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-
+ 
 import colors from '../colors/colors';
 import CustomAlert from '../components/CustomAlert';
 import { addObservationToTrip } from '../store/slices/tripSlice';
+ 
 import { ICONS } from '../constants/icons';
 import { Asset } from 'expo-asset';
 import * as FileSystem from 'expo-file-system/legacy';

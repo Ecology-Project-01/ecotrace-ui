@@ -1,14 +1,14 @@
 const palette = {
     // Vivid / Neon "Cyber-Pop" Palette
-    electricCyan: "#00F0FF", // High energy Cyan - Keep for accents
-    neonPurple: "#BD00FF", // Deep electric Purple - Keep for secondary
+    electricCyan: "#00F0FF",
+    neonPurple: "#BD00FF",
 
     // New Primary Button Colors (Pink/Peach)
-    vividPink: "#FF4081", // Pink
-    warmPeach: "#FF8A80", // Peach
-    softPeach: "#FFCCBC", // Light Peach
+    vividPink: "#FF4081",
+    warmPeach: "#FF8A80",
+    softPeach: "#FFCCBC",
 
-    electricLime: "#CCFF00", // Zesty Lime
+    electricLime: "#CCFF00",
 
     // Softer Gradient Tones
     softPurple: "#D580FF",
@@ -37,10 +37,9 @@ export default {
     ...palette,
 
     // Default Legacy References
-    primary: palette.vividPink, // Updated to Pink
+    primary: palette.vividPink,
     secondary: palette.neonPurple,
-    tertiary: palette.warmPeach, // Updated to Peach
-    // Aliases for backward compat
+    tertiary: palette.warmPeach,
     purple: palette.neonPurple,
     purpleLight: palette.purpleLight,
     red: "#FF1744",
@@ -55,7 +54,7 @@ export default {
     error: "#FF1744",
     success: palette.electricLime,
 
-    // Updated Gradients for Buttons (Pink/Peach)
+    // Gradients
     gradientPrimary: [palette.vividPink, palette.warmPeach],
     gradientPurple: [palette.softPurple, palette.softPink],
     gradientSurface: [palette.white, "#FFEEF2"],
@@ -76,6 +75,7 @@ export default {
         gradientSurface: [palette.white, "#FFEEF2"],
         statusBarStyle: "dark",
     },
+
     dark: {
         background: palette.voidDark,
         surface: palette.voidSurface,
@@ -90,4 +90,51 @@ export default {
         gradientSurface: [palette.voidSurface, "#251015"],
         statusBarStyle: "light",
     },
-};
+
+    // ✅ NEW THEMES
+    blue: {
+        background: "#E3F2FD",
+        surface: "#FFFFFF",
+        text: "#0D1B2A",
+        textSecondary: "#1565C0",
+        textLight: "#90CAF9",
+        border: "#BBDEFB",
+        primary: "#1976D2",
+        secondary: "#0288D1",
+        accent: "#29B6F6",
+        highlight: "#00E5FF",
+        gradientSurface: ["#FFFFFF", "#E3F2FD"],
+        statusBarStyle: "dark",
+    },
+
+    grey: {
+        background: "#F5F5F5",
+        surface: "#FFFFFF",
+        text: "#212121",
+        textSecondary: "#757575",
+        textLight: "#BDBDBD",
+        border: "#E0E0E0",
+        primary: "#616161",
+        secondary: "#424242",
+        accent: "#9E9E9E",
+        highlight: "#EEEEEE",
+        gradientSurface: ["#FFFFFF", "#F5F5F5"],
+        statusBarStyle: "dark",
+    },
+
+    purple: {
+        background: "#F3E5F5",
+        surface: "#FFFFFF",
+        text: "#1A0030",
+        textSecondary: "#6A1B9A",
+        textLight: "#CE93D8",
+        border: "#E1BEE7",
+        primary: "#8E24AA",
+        secondary: "#AB47BC",
+        accent: "#EA80FC",
+        highlight: "#E040FB",
+        gradientSurface: ["#FFFFFF", "#F3E5F5"],
+        statusBarStyle: "dark",
+    },
+
+}; // ✅ ONE closing }; at the very end

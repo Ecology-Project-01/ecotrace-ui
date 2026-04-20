@@ -4,12 +4,10 @@ import CustomAlert from '../components/CustomAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSelector, useDispatch } from 'react-redux';
-import { toggleTheme } from '../store/slices/themeSlice';
+import { setTheme } from '../store/slices/themeSlice';  // ✅ changed from toggleTheme
 import colors from '../colors/colors';
 import { useState } from 'react';
 
-// Helper component for settings items
-// Now accepts `theme` prop to style dynamically
 const SettingItem = ({ title, subtitle, onPress, showArrow = true, theme, rightElement }) => (
     <TouchableOpacity
         style={[styles.settingItem, { backgroundColor: theme.surface, borderColor: theme.border }]}
@@ -25,11 +23,11 @@ const SettingItem = ({ title, subtitle, onPress, showArrow = true, theme, rightE
 );
 
 export default function Settings({ navigation, onLogout }) {
-    const isDark = useSelector((state) => state.theme.isDark);
+    // ✅ Read themeName instead of isDark
+    const themeName = useSelector((state) => state.theme.themeName);
     const { auth_username, auth_email, auth_role, auth_org } = useSelector((state) => state.user);
     const dispatch = useDispatch();
 
-    // Custom Alert State
     const [alertVisible, setAlertVisible] = useState(false);
     const [alertConfig, setAlertConfig] = useState({ title: '', message: '', buttons: [] });
 
@@ -49,19 +47,18 @@ export default function Settings({ navigation, onLogout }) {
         );
     };
 
-    // Select the active theme object
-    const theme = isDark ? colors.dark : colors.light;
+    // ✅ Get theme object from colors using themeName
+    const theme = colors[themeName] || colors.light;
+    const isDark = themeName === 'dark'; // ✅ for Switch display only
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
 
-                {/* Custom Header */}
                 <View style={styles.header}>
                     <Text style={[styles.title, { color: theme.text, textAlign: 'center' }]}>Settings</Text>
                 </View>
 
-                {/* Header / Profile Section - Minimalist & Colorful */}
                 <View style={[styles.headerSection]}>
                     <LinearGradient
                         colors={isDark ? [colors.purple, colors.purpleLight] : colors.gradientPrimary}
@@ -79,15 +76,36 @@ export default function Settings({ navigation, onLogout }) {
                 <View style={styles.section}>
                     <Text style={[styles.sectionHeader, { color: theme.primary }]}>Appearance</Text>
                     <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                        <View style={styles.row}>
+
+                        {/* ✅ Dark Mode toggle */}
+                        <View style={[styles.row, { marginBottom: 16 }]}>
                             <Text style={[styles.rowLabel, { color: theme.text }]}>Dark Mode</Text>
                             <Switch
                                 value={isDark}
-                                onValueChange={() => dispatch(toggleTheme())}
+                                onValueChange={(val) => dispatch(setTheme(val ? 'dark' : 'light'))}
                                 trackColor={{ false: colors.gray100, true: colors.purpleLight }}
                                 thumbColor={isDark ? colors.purple : "#f4f3f4"}
                             />
                         </View>
+
+                        {/* ✅ Theme selector buttons */}
+                        <Text style={[styles.rowLabel, { color: theme.text, marginBottom: 10 }]}>Theme</Text>
+                        <View style={styles.themeRow}>
+                            {['light', 'dark', 'blue', 'grey', 'purple'].map((t) => (
+                                <TouchableOpacity
+                                    key={t}
+                                    onPress={() => dispatch(setTheme(t))}
+                                    style={[
+                                        styles.themeBtn,
+                                        { backgroundColor: colors[t]?.primary || colors.light.primary },
+                                        themeName === t && styles.themeBtnActive,
+                                    ]}
+                                >
+                                    <Text style={styles.themeBtnText}>{t.charAt(0).toUpperCase() + t.slice(1)}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
                     </View>
                 </View>
 
@@ -115,7 +133,7 @@ export default function Settings({ navigation, onLogout }) {
                     </View>
                 </View>
 
-                {/* Administration Section - Conditional */}
+                {/* Administration Section */}
                 {(auth_role === 'admin' || auth_role === 'superadmin') && (
                     <View style={styles.section}>
                         <Text style={[styles.sectionHeader, { color: colors.purple }]}>Administration</Text>
@@ -139,8 +157,6 @@ export default function Settings({ navigation, onLogout }) {
                     </View>
                 )}
 
-
-                {/* Logout */}
                 <TouchableOpacity onPress={handleLogout} activeOpacity={0.8} style={styles.logoutBtnContainer}>
                     <Text style={[styles.logoutText, { color: colors.red }]}>Log Out</Text>
                 </TouchableOpacity>
@@ -160,114 +176,52 @@ export default function Settings({ navigation, onLogout }) {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    scrollContent: {
-        padding: 24,
-        paddingBottom: 50,
-    },
-    header: {
-        marginBottom: 20,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-    },
-    headerSection: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 32,
-    },
+    container: { flex: 1 },
+    scrollContent: { padding: 24, paddingBottom: 50 },
+    header: { marginBottom: 20 },
+    title: { fontSize: 28, fontWeight: 'bold' },
+    headerSection: { flexDirection: 'row', alignItems: 'center', marginBottom: 32 },
     avatarContainer: {
-        width: 64,
-        height: 64,
-        borderRadius: 32,
-        alignItems: 'center',
-        justifyContent: 'center',
-        shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 5,
+        width: 64, height: 64, borderRadius: 32,
+        alignItems: 'center', justifyContent: 'center',
+        shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3, shadowRadius: 8, elevation: 5,
     },
-    avatarText: {
-        fontSize: 28,
-        color: '#FFF',
-        fontWeight: 'bold',
-    },
-    headerTextContainer: {
-        marginLeft: 16,
-        flex: 1,
-    },
-    userName: {
-        fontSize: 22,
-        fontWeight: '700',
-        marginBottom: 2,
-    },
-    userEmail: {
-        fontSize: 14,
-    },
-    section: {
-        marginBottom: 28,
-    },
+    avatarText: { fontSize: 28, color: '#FFF', fontWeight: 'bold' },
+    headerTextContainer: { marginLeft: 16, flex: 1 },
+    userName: { fontSize: 22, fontWeight: '700', marginBottom: 2 },
+    userEmail: { fontSize: 14 },
+    section: { marginBottom: 28 },
     sectionHeader: {
-        fontSize: 13,
-        fontWeight: '800',
-        marginBottom: 12,
-        textTransform: 'uppercase',
-        letterSpacing: 1.2,
-        marginLeft: 4,
+        fontSize: 13, fontWeight: '800', marginBottom: 12,
+        textTransform: 'uppercase', letterSpacing: 1.2, marginLeft: 4,
     },
-    cardContainer: {
-        borderRadius: 16,
-        overflow: 'hidden',
-    },
+    cardContainer: { borderRadius: 16, overflow: 'hidden' },
     settingItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: 16,
-        borderBottomWidth: 1,
-        marginBottom: -1, // Collapse borders
+        flexDirection: 'row', alignItems: 'center',
+        justifyContent: 'space-between', padding: 16,
+        borderBottomWidth: 1, marginBottom: -1,
     },
-    settingContent: {
-        flex: 1,
+    settingContent: { flex: 1 },
+    settingTitle: { fontSize: 16, fontWeight: '500' },
+    settingSubtitle: { fontSize: 13, marginTop: 2 },
+    arrow: { fontSize: 18, fontWeight: '600' },
+    card: { borderRadius: 16, padding: 16, borderWidth: 1 },
+    row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    rowLabel: { fontSize: 16, fontWeight: '500' },
+    logoutBtnContainer: { alignItems: 'center', padding: 16, marginTop: 8, borderRadius: 12 },
+    logoutText: { fontSize: 16, fontWeight: '700' },
+
+    // ✅ New theme selector styles
+    themeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    themeBtn: {
+        paddingHorizontal: 14, paddingVertical: 8,
+        borderRadius: 20, opacity: 0.85,
     },
-    settingTitle: {
-        fontSize: 16,
-        fontWeight: '500',
+    themeBtnActive: {
+        opacity: 1,
+        borderWidth: 2,
+        borderColor: '#fff',
     },
-    settingSubtitle: {
-        fontSize: 13,
-        marginTop: 2,
-    },
-    arrow: {
-        fontSize: 18,
-        fontWeight: '600',
-    },
-    card: {
-        borderRadius: 16,
-        padding: 16,
-        borderWidth: 1,
-    },
-    row: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    rowLabel: {
-        fontSize: 16,
-        fontWeight: '500',
-    },
-    logoutBtnContainer: {
-        alignItems: 'center',
-        padding: 16,
-        marginTop: 8,
-        borderRadius: 12,
-    },
-    logoutText: {
-        fontSize: 16,
-        fontWeight: '700',
-    },
+    themeBtnText: { color: '#fff', fontSize: 13, fontWeight: '600' },
 });

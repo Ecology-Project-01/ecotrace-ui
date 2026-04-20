@@ -5,20 +5,24 @@ import { useSelector } from 'react-redux';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import colors from '../colors/colors';
-
 import { useNavigation } from '@react-navigation/native';
 
 export default function Home({ onLogout }) {
-  const isDark = useSelector((state) => state.theme.isDark);
+  // ✅ changed from isDark to themeName
+  const themeName = useSelector((state) => state.theme.themeName);
   const username = useSelector((state) => state.user.auth_username);
   const email = useSelector((state) => state.user.auth_email);
-  const theme = isDark ? colors.dark : colors.light;
+
+  // ✅ get theme object from colors
+  const theme = colors[themeName] || colors.light;
+  const isDark = themeName === 'dark'; // ✅ only used for gradients
+
   const navigation = useNavigation();
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Custom Header */}
+
         <View style={styles.header}>
           <Text style={[styles.headerTitle, { color: theme.text, textAlign: 'center' }]}>Dashboard</Text>
         </View>
@@ -26,35 +30,36 @@ export default function Home({ onLogout }) {
         <Text style={[styles.greeting, { color: theme.primary }]}>Happy Eco-Tracing!</Text>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Welcome back, {username || "Friend"}</Text>
 
-        {/* Tracking Action */}
+        {/* Start Trip Button */}
         <TouchableOpacity
           style={styles.actionButtonContainer}
           activeOpacity={0.8}
           onPress={() => navigation.navigate('TrackMap')}
         >
           <LinearGradient
-            colors={isDark ? colors.gradientPurple : colors.gradientPrimary}
+            colors={theme.gradientSurface ?? colors.gradientPrimary}
             style={styles.gradientButton}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
           >
             <View style={{ alignItems: 'center' }}>
-              <Text style={styles.buttonText}>Start Trip</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: '500', marginTop: 4 }}>
+              <Text style={[styles.buttonText, { color: theme.text }]}>Start Trip</Text>
+              <Text style={{ color: theme.textSecondary, fontSize: 13, fontWeight: '500', marginTop: 4 }}>
                 Track path & record findings
               </Text>
             </View>
           </LinearGradient>
         </TouchableOpacity>
 
+        {/* Secondary Buttons */}
         <View style={styles.secondaryActions}>
           <TouchableOpacity
-            style={[styles.smallActionButton, { backgroundColor: isDark ? '#333' : '#ebebeb' }]}
+            style={[styles.smallActionButton, { backgroundColor: theme.surface }]}
             activeOpacity={0.8}
             onPress={() => navigation.navigate('TripsHistory')}
           >
             <LinearGradient
-              colors={isDark ? ['#444', '#222'] : ['#f0f0f0', '#e0e0e0']}
+              colors={theme.gradientSurface ?? ['#f0f0f0', '#e0e0e0']}
               style={styles.smallGradient}
             >
               <Text style={[styles.smallButtonText, { color: theme.text }]}>My Trips</Text>
@@ -62,12 +67,12 @@ export default function Home({ onLogout }) {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.smallActionButton, { backgroundColor: isDark ? '#333' : '#ebebeb' }]}
+            style={[styles.smallActionButton, { backgroundColor: theme.surface }]}
             activeOpacity={0.8}
             onPress={() => navigation.navigate('Results')}
           >
             <LinearGradient
-              colors={isDark ? ['#444', '#222'] : ['#f0f0f0', '#e0e0e0']}
+              colors={theme.gradientSurface ?? ['#f0f0f0', '#e0e0e0']}
               style={styles.smallGradient}
             >
               <Text style={[styles.smallButtonText, { color: theme.text }]}>Record Logs</Text>
@@ -77,34 +82,18 @@ export default function Home({ onLogout }) {
 
       </ScrollView>
 
-      <StatusBar style={isDark ? "light" : "dark"} />
+      <StatusBar style={theme.statusBarStyle === 'light' ? 'light' : 'dark'} />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: 24,
-  },
-  header: {
-    marginBottom: 24,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-  },
-  greeting: {
-    fontSize: 24,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    marginBottom: 30,
-  },
+  container: { flex: 1 },
+  content: { padding: 24 },
+  header: { marginBottom: 24 },
+  headerTitle: { fontSize: 28, fontWeight: 'bold' },
+  greeting: { fontSize: 24, fontWeight: '600', marginBottom: 8 },
+  subtitle: { fontSize: 16, marginBottom: 30 },
   actionButtonContainer: {
     width: '100%',
     shadowColor: "#000",
@@ -119,12 +108,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonText: {
-    color: '#FFF',
-    fontSize: 22,
-    fontWeight: 'bold',
-    letterSpacing: 1.2,
-  },
+  buttonText: { fontSize: 22, fontWeight: 'bold', letterSpacing: 1.2 },
   secondaryActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -146,8 +130,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  smallButtonText: {
-    fontSize: 15,
-    fontWeight: 'bold',
-  }
+  smallButtonText: { fontSize: 15, fontWeight: 'bold' },
 });
